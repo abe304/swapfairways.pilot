@@ -11,6 +11,21 @@ socios de un mismo club antes de construir algo más ambicioso.
 - [Supabase](https://supabase.com/) (Postgres + Auth + Storage)
 - Despliegue recomendado: [Vercel](https://vercel.com/)
 
+## Modo demo (sin Supabase todavía)
+
+Si corres `npm run dev` sin configurar `.env.local` (o con las variables
+placeholder), la app arranca automáticamente en **modo demo**: un backend
+falso en memoria (`lib/mock/`) con datos de ejemplo ya cargados, para poder
+navegar toda la app sin crear un proyecto Supabase primero.
+
+- Entra con **`test@test.com`** / **`testtest`**.
+- Los datos viven en memoria del proceso de `next dev` — se reinician si
+  reinicias el servidor. No es apto para el piloto real con socios, solo
+  para explorar el flujo y el diseño.
+- En cuanto configures `NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  reales (ver [Setup local](#setup-local) abajo), el modo demo se desactiva
+  solo y la app usa Supabase de verdad.
+
 ## Cómo funciona el piloto
 
 1. Cualquier socio se registra con email/contraseña y recibe créditos de bienvenida.
