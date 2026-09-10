@@ -1,8 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { Database } from "./types";
+import { MOCK_MODE } from "@/lib/mock/is-mock";
+import { createMockClient } from "@/lib/mock/client";
 
-export async function createClient() {
+async function createRealClient() {
   const cookieStore = await cookies();
 
   return createServerClient<Database>(
@@ -27,4 +29,17 @@ export async function createClient() {
       },
     },
   );
+}
+
+type RealClient = Awaited<ReturnType<typeof createRealClient>>;
+
+export async function createClient(): Promise<RealClient> {
+  if (MOCK_MODE) {
+    // Modo demo sin Supabase real: ver lib/mock/*. El objeto expone el
+    // mismo `.auth` / `.from` / `.rpc` que usa el resto de la app, así que
+    // el cast es seguro en tiempo de ejecución aunque no comparta el tipo
+    // generado exacto del cliente real.
+    return (await createMockClient()) as unknown as RealClient;
+  }
+  return createRealClient();
 }

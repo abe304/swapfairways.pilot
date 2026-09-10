@@ -172,13 +172,15 @@ export default async function MisRondasPage({
                                 <ActionButton
                                   label="Aprobar"
                                   pendingLabel="Aprobando..."
-                                  onRun={() => approveRequest(req.id)}
+                                  requestId={req.id}
+                                  action={approveRequest}
                                 />
                                 <ActionButton
                                   label="Rechazar"
                                   pendingLabel="Rechazando..."
                                   variant="ghost"
-                                  onRun={() => rejectRequest(req.id)}
+                                  requestId={req.id}
+                                  action={rejectRequest}
                                 />
                               </>
                             ) : null}
@@ -187,7 +189,8 @@ export default async function MisRondasPage({
                                 label={puedeMarcarJugada ? "Marcar ronda jugada" : "Disponible el día de la ronda"}
                                 pendingLabel="Guardando..."
                                 variant="secondary"
-                                onRun={() => markPlayed(req.id)}
+                                requestId={req.id}
+                                action={markPlayed}
                               />
                             ) : null}
                             {req.estado === "jugado" ? (

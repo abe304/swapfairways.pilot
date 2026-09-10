@@ -4,16 +4,23 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 
+type ActionResult = { error?: string; success?: boolean } | undefined;
+
 export function ActionButton({
   label,
   pendingLabel,
   variant = "primary",
-  onRun,
+  requestId,
+  action,
 }: {
   label: string;
   pendingLabel: string;
   variant?: "primary" | "secondary" | "danger" | "ghost";
-  onRun: () => Promise<{ error?: string; success?: boolean } | undefined>;
+  requestId: string;
+  // Debe ser una Server Action importada directamente (no un closure creado
+  // en el Server Component) para poder pasarse como prop a este Client
+  // Component — Next.js no permite serializar closures arbitrarios.
+  action: (requestId: string) => Promise<ActionResult>;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -27,7 +34,7 @@ export function ActionButton({
         onClick={() =>
           startTransition(async () => {
             setError(null);
-            const result = await onRun();
+            const result = await action(requestId);
             if (result?.error) {
               setError(result.error);
             } else {
