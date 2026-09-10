@@ -63,9 +63,14 @@ create table public.requests (
   creditos_cobrados integer not null default 1,
   created_at timestamptz not null default now(),
   aprobado_at timestamptz,
-  jugado_at timestamptz,
-  unique (offer_id, guest_id)
+  jugado_at timestamptz
 );
+
+-- Único por (offer_id, guest_id) solo mientras la solicitud sigue activa,
+-- para permitir volver a solicitar la misma oferta tras un rechazo o
+-- cancelación previos.
+create unique index requests_offer_guest_active_idx on public.requests (offer_id, guest_id)
+  where estado in ('pendiente', 'aprobado', 'jugado');
 
 create table public.credit_transactions (
   id uuid primary key default gen_random_uuid(),
