@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { Card, Badge } from "@/components/ui/Card";
 import { LinkButton } from "@/components/ui/Button";
-import { formatFecha, formatHora, formatMoneda } from "@/lib/utils";
+import { formatFecha, formatHora, formatMoneda, mapsUrl } from "@/lib/utils";
 import { RequestButton } from "./RequestButton";
 
 const ESTADO_LABEL: Record<string, string> = {
@@ -26,14 +26,19 @@ export default async function OfertaDetallePage({
 
   const { data: offer } = await supabase
     .from("tee_time_offers")
-    .select("*, clubs(nombre, ciudad), profiles!tee_time_offers_host_id_fkey(id, nombre, handicap_manual)")
+    .select(
+      "*, clubs(nombre, ciudad, direccion, tipo), profiles!tee_time_offers_host_id_fkey(id, nombre, handicap_manual)",
+    )
     .eq("id", id)
     .single();
 
   if (!offer) notFound();
 
-  const club = (offer as unknown as { clubs: { nombre: string; ciudad: string | null } | null })
-    .clubs;
+  const club = (
+    offer as unknown as {
+      clubs: { nombre: string; ciudad: string | null; direccion: string | null; tipo: string } | null;
+    }
+  ).clubs;
   const host = (
     offer as unknown as {
       profiles: { id: string; nombre: string; handicap_manual: number | null } | null;
@@ -69,6 +74,16 @@ export default async function OfertaDetallePage({
           <div>
             <h1 className="text-2xl font-semibold text-swf-verde">{club?.nombre}</h1>
             <p className="text-sm text-swf-verde/70">{club?.ciudad}</p>
+            {club?.direccion ? (
+              <a
+                href={mapsUrl(club.direccion)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1 inline-block text-sm text-swf-dorado underline"
+              >
+                Ver ubicación en Google Maps
+              </a>
+            ) : null}
           </div>
           <Badge tone={offer.estado === "activa" ? "success" : "default"}>
             {offer.estado}
@@ -109,6 +124,19 @@ export default async function OfertaDetallePage({
         {detallesLiberados ? (
           <div className="space-y-2 text-sm text-swf-verde/80">
             <p>{offer.nota || "El anfitrión no dejó una nota adicional."}</p>
+            {club?.direccion ? (
+              <p>
+                <span className="font-medium">Punto de encuentro:</span> {club.direccion}{" "}
+                <a
+                  href={mapsUrl(club.direccion)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-swf-dorado underline"
+                >
+                  Abrir en Google Maps
+                </a>
+              </p>
+            ) : null}
             {!isHost ? (
               <p>
                 <span className="font-medium">Contacto del anfitrión:</span>{" "}

@@ -3,8 +3,9 @@
 import { useActionState } from "react";
 import { createOffer } from "../actions";
 import { Button } from "@/components/ui/Button";
-import { FormField, Input, Select, Textarea } from "@/components/ui/Field";
+import { FormField, Input, Textarea } from "@/components/ui/Field";
 import { Card } from "@/components/ui/Card";
+import { ClubSelect } from "@/components/ClubSelect";
 import type { Club } from "@/lib/supabase/types";
 
 export function OfferForm({
@@ -20,16 +21,7 @@ export function OfferForm({
     <Card>
       <form action={action} className="space-y-4">
         <FormField label="Club" htmlFor="club_id">
-          <Select id="club_id" name="club_id" defaultValue={defaultClubId ?? ""} required>
-            <option value="" disabled>
-              Selecciona un club
-            </option>
-            {clubs.map((club) => (
-              <option key={club.id} value={club.id}>
-                {club.nombre}
-              </option>
-            ))}
-          </Select>
+          <ClubSelect clubs={clubs} defaultValue={defaultClubId} required />
         </FormField>
         <div className="grid grid-cols-2 gap-4">
           <FormField label="Fecha" htmlFor="fecha">

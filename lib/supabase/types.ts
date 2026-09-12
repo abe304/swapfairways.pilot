@@ -10,11 +10,15 @@ export type RequestEstado =
   | "jugado"
   | "cancelado";
 export type CreditTipo = "bienvenida" | "ganado" | "gastado" | "ajuste_admin";
+export type ClubTipo = "privado" | "publico";
 
 export type Club = {
   id: string;
   nombre: string;
   ciudad: string | null;
+  estado: string | null;
+  direccion: string | null;
+  tipo: ClubTipo;
   created_at: string;
 }
 

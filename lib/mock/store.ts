@@ -1,4 +1,5 @@
 import { MOCK_LOGIN_EMAIL, MOCK_LOGIN_PASSWORD } from "./is-mock";
+import { CLUBES_MEXICO } from "@/lib/data/clubs-mexico";
 
 export type MockRow = Record<string, unknown>;
 export type MockTable =
@@ -47,8 +48,22 @@ export function applyCreditTx(tx: {
 }
 
 function buildInitialStore(): Store {
-  const clubBosques = "club-bosques";
-  const clubGuadalajara = "club-guadalajara";
+  const clubs: MockRow[] = CLUBES_MEXICO.map((c) => ({
+    id: uid("club"),
+    nombre: c.nombre,
+    ciudad: c.ciudad,
+    estado: c.estado,
+    direccion: c.direccion,
+    tipo: c.tipo,
+    created_at: nowIso(),
+  }));
+  const findClubId = (nombre: string) => {
+    const club = clubs.find((c) => c.nombre === nombre);
+    if (!club) throw new Error(`Club de demo no encontrado: ${nombre}`);
+    return club.id as string;
+  };
+  const clubBosques = findClubId("Club de Golf México");
+  const clubGuadalajara = findClubId("Club Campestre de Guadalajara");
 
   const uTest = "user-test";
   const uCarlos = "user-carlos";
@@ -59,10 +74,7 @@ function buildInitialStore(): Store {
 
   const store: Store = {
     authUsers: [{ id: uTest, email: MOCK_LOGIN_EMAIL, password: MOCK_LOGIN_PASSWORD }],
-    clubs: [
-      { id: clubBosques, nombre: "Club de Golf Bosques", ciudad: "Ciudad de México", created_at: nowIso() },
-      { id: clubGuadalajara, nombre: "Club Campestre Guadalajara", ciudad: "Guadalajara", created_at: nowIso() },
-    ],
+    clubs,
     profiles: [
       {
         id: uTest,

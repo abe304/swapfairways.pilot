@@ -1,12 +1,13 @@
 /**
  * Seed de datos de prueba para el piloto de SwapFairways.
  * Pensado para correr UNA VEZ sobre un proyecto Supabase recién creado
- * (después de aplicar supabase/migrations/0001_init.sql).
+ * (después de aplicar todas las migraciones en supabase/migrations/).
  *
  * Uso: npm run seed
  */
 import "dotenv/config";
 import { createAdminClient } from "../lib/supabase/admin";
+import { CLUBES_MEXICO } from "../lib/data/clubs-mexico";
 
 const SEED_PASSWORD = "SwapFairways2026!";
 
@@ -18,21 +19,31 @@ function daysFromNow(days: number) {
   return d.toISOString().slice(0, 10);
 }
 
-async function upsertClub(nombre: string, ciudad: string) {
-  const { data: existing } = await supabase
-    .from("clubs")
-    .select("id")
-    .eq("nombre", nombre)
-    .maybeSingle();
-  if (existing) return existing.id;
-
-  const { data, error } = await supabase
-    .from("clubs")
-    .insert({ nombre, ciudad })
-    .select("id")
-    .single();
-  if (error || !data) throw error ?? new Error(`No se pudo crear el club ${nombre}`);
-  return data.id;
+// Carga el catálogo completo de clubs (ver lib/data/clubs-mexico.ts) y
+// devuelve un mapa nombre -> id para referenciarlos al crear ofertas.
+// Si ya corriste supabase/migrations/0002_clubs_mexico.sql este catálogo
+// ya está cargado y esto solo lo completa/idempotentiza.
+async function loadClubs(): Promise<Map<string, string>> {
+  const byName = new Map<string, string>();
+  for (const club of CLUBES_MEXICO) {
+    const { data: existing } = await supabase
+      .from("clubs")
+      .select("id")
+      .eq("nombre", club.nombre)
+      .maybeSingle();
+    if (existing) {
+      byName.set(club.nombre, existing.id);
+      continue;
+    }
+    const { data, error } = await supabase
+      .from("clubs")
+      .insert(club)
+      .select("id")
+      .single();
+    if (error || !data) throw error ?? new Error(`No se pudo crear el club ${club.nombre}`);
+    byName.set(club.nombre, data.id);
+  }
+  return byName;
 }
 
 async function createUser(params: {
@@ -113,10 +124,16 @@ async function createOffer(params: {
 }
 
 async function main() {
-  console.log("Creando clubes...");
-  const clubBosques = await upsertClub("Club de Golf Bosques", "Ciudad de México");
-  const clubGuadalajara = await upsertClub("Club Campestre Guadalajara", "Guadalajara");
-  const clubMonterrey = await upsertClub("Valle Escondido Golf & Country Club", "Monterrey");
+  console.log(`Creando catálogo de ${CLUBES_MEXICO.length} clubes de golf de México...`);
+  const clubsByName = await loadClubs();
+  const clubId = (nombre: string) => {
+    const id = clubsByName.get(nombre);
+    if (!id) throw new Error(`Club no encontrado en el catálogo: ${nombre}`);
+    return id;
+  };
+  const clubBosques = clubId("Club de Golf México");
+  const clubGuadalajara = clubId("Club Campestre de Guadalajara");
+  const clubMonterrey = clubId("Club Campestre de Monterrey");
 
   console.log("Creando socios de prueba...");
   const ana = await createUser({

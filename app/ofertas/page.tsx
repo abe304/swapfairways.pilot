@@ -3,7 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, Badge } from "@/components/ui/Card";
 import { LinkButton } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Field";
-import { formatFecha, formatHora } from "@/lib/utils";
+import { formatFecha, formatHora, mapsUrl } from "@/lib/utils";
+import type { Club } from "@/lib/supabase/types";
 
 export default async function OfertasPage({
   searchParams,
@@ -13,11 +14,15 @@ export default async function OfertasPage({
   const { club_id, fecha } = await searchParams;
   const supabase = await createClient();
 
-  const { data: clubs } = await supabase.from("clubs").select("*").order("nombre");
+  const { data: clubsData } = await supabase.from("clubs").select("*").order("nombre");
+  const clubs = clubsData ?? [];
+  const estados = Array.from(new Set(clubs.map((c) => c.estado ?? "Otro"))).sort((a, b) =>
+    a.localeCompare(b, "es"),
+  );
 
   let query = supabase
     .from("tee_time_offers")
-    .select("*, clubs(nombre, ciudad), profiles!tee_time_offers_host_id_fkey(nombre)")
+    .select("*, clubs(nombre, ciudad, direccion), profiles!tee_time_offers_host_id_fkey(nombre)")
     .eq("estado", "activa")
     .gte("fecha", new Date().toISOString().slice(0, 10))
     .order("fecha", { ascending: true });
@@ -39,10 +44,16 @@ export default async function OfertasPage({
       <form className="mb-6 flex flex-wrap gap-3" method="get">
         <Select name="club_id" defaultValue={club_id ?? ""} className="max-w-xs">
           <option value="">Todos los clubes</option>
-          {clubs?.map((club) => (
-            <option key={club.id} value={club.id}>
-              {club.nombre}
-            </option>
+          {estados.map((estado) => (
+            <optgroup key={estado} label={estado}>
+              {clubs
+                .filter((c: Club) => (c.estado ?? "Otro") === estado)
+                .map((club: Club) => (
+                  <option key={club.id} value={club.id}>
+                    {club.nombre}
+                  </option>
+                ))}
+            </optgroup>
           ))}
         </Select>
         <input
@@ -76,15 +87,18 @@ export default async function OfertasPage({
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {offers.map((offer) => {
-            const club = (offer as unknown as { clubs: { nombre: string; ciudad: string | null } | null })
-              .clubs;
+            const club = (
+              offer as unknown as {
+                clubs: { nombre: string; ciudad: string | null; direccion: string | null } | null;
+              }
+            ).clubs;
             const host = (
               offer as unknown as { profiles: { nombre: string } | null }
             ).profiles;
             const cuposLibres = offer.pases_disponibles - offer.pases_confirmados;
             return (
-              <Link key={offer.id} href={`/ofertas/${offer.id}`}>
-                <Card className="h-full transition-shadow hover:shadow-md">
+              <Card key={offer.id} className="h-full transition-shadow hover:shadow-md">
+                <Link href={`/ofertas/${offer.id}`}>
                   <div className="mb-2 flex items-center justify-between">
                     <h2 className="font-semibold text-swf-verde">{club?.nombre}</h2>
                     <Badge tone={cuposLibres > 0 ? "success" : "warning"}>
@@ -102,8 +116,18 @@ export default async function OfertasPage({
                     {offer.caddie_incluido ? <Badge>Caddie incluido</Badge> : null}
                     {offer.carrito_compartido ? <Badge>Carrito compartido</Badge> : null}
                   </div>
-                </Card>
-              </Link>
+                </Link>
+                {club?.direccion ? (
+                  <a
+                    href={mapsUrl(club.direccion)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 block text-xs text-swf-dorado underline"
+                  >
+                    Ver ubicación en Google Maps
+                  </a>
+                ) : null}
+              </Card>
             );
           })}
         </div>

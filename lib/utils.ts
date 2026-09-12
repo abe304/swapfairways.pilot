@@ -30,6 +30,10 @@ export function formatMoneda(monto: number | null) {
   }).format(monto);
 }
 
+export function mapsUrl(direccion: string) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion)}`;
+}
+
 export const BEHAVIOR_TAGS = [
   "Buen ritmo de juego",
   "Puntual",

@@ -3,8 +3,9 @@
 import { useActionState } from "react";
 import { updateProfile } from "./actions";
 import { Button } from "@/components/ui/Button";
-import { FormField, Input, Select, Textarea } from "@/components/ui/Field";
+import { FormField, Input, Textarea } from "@/components/ui/Field";
 import { Card } from "@/components/ui/Card";
+import { ClubSelect } from "@/components/ClubSelect";
 import type { Club, Profile } from "@/lib/supabase/types";
 
 export function ProfileForm({
@@ -25,15 +26,7 @@ export function ProfileForm({
           <Input id="nombre" name="nombre" defaultValue={profile.nombre} required />
         </FormField>
         <FormField label="Club" htmlFor="club_id">
-          <Select id="club_id" name="club_id" defaultValue={profile.club_id ?? ""}>
-            <option value="">Selecciona tu club</option>
-            {clubs.map((club) => (
-              <option key={club.id} value={club.id}>
-                {club.nombre}
-                {club.ciudad ? ` — ${club.ciudad}` : ""}
-              </option>
-            ))}
-          </Select>
+          <ClubSelect clubs={clubs} defaultValue={profile.club_id} />
         </FormField>
         <FormField label="Handicap" htmlFor="handicap_manual">
           <Input
