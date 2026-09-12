@@ -55,6 +55,8 @@ function buildInitialStore(): Store {
     estado: c.estado,
     direccion: c.direccion,
     tipo: c.tipo,
+    latitud: c.latitud ?? null,
+    longitud: c.longitud ?? null,
     created_at: nowIso(),
   }));
   const findClubId = (nombre: string) => {

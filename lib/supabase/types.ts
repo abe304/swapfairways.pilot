@@ -19,6 +19,8 @@ export type Club = {
   estado: string | null;
   direccion: string | null;
   tipo: ClubTipo;
+  latitud: number | null;
+  longitud: number | null;
   created_at: string;
 }
 

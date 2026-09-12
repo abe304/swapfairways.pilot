@@ -112,3 +112,13 @@ Ver [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql) —
 - `clubs`, `profiles` (1:1 con `auth.users`), `profile_contacts` (teléfono, visible solo entre partes con una solicitud aprobada/jugada)
 - `tee_time_offers`, `requests`, `credit_transactions` (ledger — `profiles.creditos_balance` se mantiene por trigger), `reviews`
 - Toda mutación sensible (crear solicitud, aprobar, rechazar, marcar jugada) pasa por funciones `SECURITY DEFINER` (`create_join_request`, `approve_request`, `reject_request`, `mark_request_played`) que validan reglas de negocio server-side, no solo en el cliente.
+
+## Catálogo de clubes
+
+[`supabase/migrations/0002_clubs_mexico.sql`](supabase/migrations/0002_clubs_mexico.sql) carga 166 campos de golf de México (fuente en [`lib/data/clubs-mexico.ts`](lib/data/clubs-mexico.ts), usada también por el modo demo y el seed):
+
+- **gogolf.mx** (36): plataforma de reserva pay-and-play — dirección postal exacta.
+- **Federación Mexicana de Golf** (107): mapa oficial "Campos de Golf Federados en México" — coordenadas exactas (usadas directo para el link de Maps), pero sin dirección postal ni ciudad, y el estado se estimó por cercanía cuando el KML no lo daba (puede haber algún error puntual cerca de límites estatales).
+- **Compilación manual** (~23): clubes privados conocidos no cubiertos por las dos fuentes anteriores — dirección aproximada (nombre + ciudad + estado), no verificada.
+
+Cada club tiene `tipo` ('privado' o 'publico') — la mayoría de los socios de SWF pertenecen a clubes privados, así que verifica que el club real de tu grupo piloto esté cargado correctamente (o corrígelo) en Supabase Studio antes de invitar gente.

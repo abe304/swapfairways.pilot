@@ -22,7 +22,9 @@ export default async function OfertasPage({
 
   let query = supabase
     .from("tee_time_offers")
-    .select("*, clubs(nombre, ciudad, direccion), profiles!tee_time_offers_host_id_fkey(nombre)")
+    .select(
+      "*, clubs(nombre, ciudad, direccion, latitud, longitud), profiles!tee_time_offers_host_id_fkey(nombre)",
+    )
     .eq("estado", "activa")
     .gte("fecha", new Date().toISOString().slice(0, 10))
     .order("fecha", { ascending: true });
@@ -89,7 +91,13 @@ export default async function OfertasPage({
           {offers.map((offer) => {
             const club = (
               offer as unknown as {
-                clubs: { nombre: string; ciudad: string | null; direccion: string | null } | null;
+                clubs: {
+                  nombre: string;
+                  ciudad: string | null;
+                  direccion: string | null;
+                  latitud: number | null;
+                  longitud: number | null;
+                } | null;
               }
             ).clubs;
             const host = (
@@ -119,7 +127,7 @@ export default async function OfertasPage({
                 </Link>
                 {club?.direccion ? (
                   <a
-                    href={mapsUrl(club.direccion)}
+                    href={mapsUrl(club.direccion, club)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-3 block text-xs text-swf-dorado underline"

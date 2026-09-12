@@ -27,7 +27,7 @@ export default async function OfertaDetallePage({
   const { data: offer } = await supabase
     .from("tee_time_offers")
     .select(
-      "*, clubs(nombre, ciudad, direccion, tipo), profiles!tee_time_offers_host_id_fkey(id, nombre, handicap_manual)",
+      "*, clubs(nombre, ciudad, direccion, tipo, latitud, longitud), profiles!tee_time_offers_host_id_fkey(id, nombre, handicap_manual)",
     )
     .eq("id", id)
     .single();
@@ -36,7 +36,14 @@ export default async function OfertaDetallePage({
 
   const club = (
     offer as unknown as {
-      clubs: { nombre: string; ciudad: string | null; direccion: string | null; tipo: string } | null;
+      clubs: {
+        nombre: string;
+        ciudad: string | null;
+        direccion: string | null;
+        tipo: string;
+        latitud: number | null;
+        longitud: number | null;
+      } | null;
     }
   ).clubs;
   const host = (
@@ -73,10 +80,10 @@ export default async function OfertaDetallePage({
         <div className="mb-3 flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-swf-verde">{club?.nombre}</h1>
-            <p className="text-sm text-swf-verde/70">{club?.ciudad}</p>
+            {club?.ciudad ? <p className="text-sm text-swf-verde/70">{club.ciudad}</p> : null}
             {club?.direccion ? (
               <a
-                href={mapsUrl(club.direccion)}
+                href={mapsUrl(club.direccion, club)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-1 inline-block text-sm text-swf-dorado underline"
@@ -128,7 +135,7 @@ export default async function OfertaDetallePage({
               <p>
                 <span className="font-medium">Punto de encuentro:</span> {club.direccion}{" "}
                 <a
-                  href={mapsUrl(club.direccion)}
+                  href={mapsUrl(club.direccion, club)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-swf-dorado underline"

@@ -30,8 +30,15 @@ export function formatMoneda(monto: number | null) {
   }).format(monto);
 }
 
-export function mapsUrl(direccion: string) {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion)}`;
+export function mapsUrl(
+  direccion: string,
+  coords?: { latitud: number | null; longitud: number | null } | null,
+) {
+  const query =
+    coords?.latitud != null && coords?.longitud != null
+      ? `${coords.latitud},${coords.longitud}`
+      : direccion;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
 
 export const BEHAVIOR_TAGS = [
