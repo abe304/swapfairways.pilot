@@ -42,6 +42,11 @@ export async function signUp(_prevState: unknown, formData: FormData) {
   });
 
   if (error) {
+    console.error("[signUp] Supabase error:", {
+      message: error.message,
+      status: error.status,
+      code: error.code,
+    });
     if (error.message.toLowerCase().includes("already registered")) {
       return { error: "Ya existe una cuenta con ese email." };
     }
