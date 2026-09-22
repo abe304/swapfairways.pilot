@@ -26,7 +26,7 @@ const EMBED_CONFIG: Partial<Record<MockTable, Record<string, EmbedConfig>>> = {
 };
 
 const TABLE_DEFAULTS: Partial<Record<MockTable, MockRow>> = {
-  tee_time_offers: { pases_confirmados: 0, estado: "activa" },
+  tee_time_offers: { pases_confirmados: 0, estado: "activa", fecha_flexible: false },
   profile_contacts: {},
 };
 

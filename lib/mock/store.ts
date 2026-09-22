@@ -57,6 +57,12 @@ function buildInitialStore(): Store {
     tipo: c.tipo,
     latitud: c.latitud ?? null,
     longitud: c.longitud ?? null,
+    reglamento: null,
+    requiere_caddie_invitado: false,
+    carrito_obligatorio: false,
+    requiere_ghin: false,
+    recomendacion_llegada: null,
+    costo_creditos: 1,
     created_at: nowIso(),
   }));
   const findClubId = (nombre: string) => {
@@ -66,6 +72,23 @@ function buildInitialStore(): Store {
   };
   const clubBosques = findClubId("Club de Golf México");
   const clubGuadalajara = findClubId("Club Campestre de Guadalajara");
+
+  // Ejemplo real de reglas por club (ver punto 10 del feedback del piloto).
+  const clubSantaAnita = clubs.find((c) => c.nombre === "Club Santa Anita");
+  if (clubSantaAnita) {
+    clubSantaAnita.requiere_caddie_invitado = true;
+    clubSantaAnita.carrito_obligatorio = true;
+    clubSantaAnita.requiere_ghin = true;
+    clubSantaAnita.recomendacion_llegada =
+      "Llega al menos 45 minutos antes de tu hora de salida para registro y calentamiento.";
+  }
+
+  // Ejemplo de costo variable en créditos (punto 8): un club de mayor
+  // demanda no se intercambia 1 a 1 contra uno de menor demanda.
+  const clubChapultepec = clubs.find((c) => c.nombre === "Club de Golf Chapultepec");
+  if (clubChapultepec) {
+    clubChapultepec.costo_creditos = 2;
+  }
 
   const uTest = "user-test";
   const uCarlos = "user-carlos";
@@ -84,6 +107,7 @@ function buildInitialStore(): Store {
         club_id: clubBosques,
         handicap_manual: 15.0,
         foto_url: null,
+        ghin_id: "4123456",
         bio: "Cuenta de prueba para explorar el piloto de SwapFairways.",
         creditos_balance: 0,
         is_admin: false,
@@ -95,6 +119,7 @@ function buildInitialStore(): Store {
         club_id: clubBosques,
         handicap_manual: 8.5,
         foto_url: null,
+        ghin_id: null,
         bio: "Handicap bajo, me gusta jugar temprano entre semana.",
         creditos_balance: 0,
         is_admin: false,
@@ -106,6 +131,7 @@ function buildInitialStore(): Store {
         club_id: clubBosques,
         handicap_manual: 22.0,
         foto_url: null,
+        ghin_id: null,
         bio: "Aprendiendo el juego, busco rondas relajadas para practicar.",
         creditos_balance: 0,
         is_admin: false,
@@ -117,6 +143,7 @@ function buildInitialStore(): Store {
         club_id: clubBosques,
         handicap_manual: 18.7,
         foto_url: null,
+        ghin_id: null,
         bio: "Socia desde hace 3 años, siempre buscando nuevos compañeros de juego.",
         creditos_balance: 0,
         is_admin: false,
@@ -128,6 +155,7 @@ function buildInitialStore(): Store {
         club_id: clubBosques,
         handicap_manual: 5.1,
         foto_url: null,
+        ghin_id: null,
         bio: "Ex-competitivo, disfruto rondas rápidas y con buen ritmo.",
         creditos_balance: 0,
         is_admin: false,
@@ -139,6 +167,7 @@ function buildInitialStore(): Store {
         club_id: clubGuadalajara,
         handicap_manual: 11.3,
         foto_url: null,
+        ghin_id: null,
         bio: "Anfitrión frecuente, me encanta compartir mi tee time de los sábados.",
         creditos_balance: 0,
         is_admin: false,
@@ -186,6 +215,7 @@ function buildInitialStore(): Store {
       costo_estimado: 500,
       nota: "Punto de encuentro: recepción del club. Traer identificación de socio.",
       estado: "activa",
+      fecha_flexible: false,
       created_at: nowIso(),
     },
     {
@@ -201,6 +231,7 @@ function buildInitialStore(): Store {
       costo_estimado: 300,
       nota: "Nos vemos en el driving range 20 min antes.",
       estado: "activa",
+      fecha_flexible: false,
       created_at: nowIso(),
     },
     {
@@ -216,6 +247,7 @@ function buildInitialStore(): Store {
       costo_estimado: 450,
       nota: "Nos vemos en la caseta de golfistas 15 min antes.",
       estado: "activa",
+      fecha_flexible: false,
       created_at: nowIso(),
     },
     {
@@ -231,6 +263,7 @@ function buildInitialStore(): Store {
       costo_estimado: 0,
       nota: "Ronda relajada, todos los niveles son bienvenidos.",
       estado: "cerrada",
+      fecha_flexible: false,
       created_at: nowIso(),
     },
     {
@@ -246,6 +279,7 @@ function buildInitialStore(): Store {
       costo_estimado: 400,
       nota: "Gracias por acompañarme.",
       estado: "cerrada",
+      fecha_flexible: false,
       created_at: nowIso(),
     },
     {
@@ -261,6 +295,7 @@ function buildInitialStore(): Store {
       costo_estimado: 0,
       nota: "Ronda de domingo, todos los niveles son bienvenidos.",
       estado: "activa",
+      fecha_flexible: false,
       created_at: nowIso(),
     },
   );

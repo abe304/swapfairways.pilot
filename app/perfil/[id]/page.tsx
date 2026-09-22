@@ -67,6 +67,9 @@ export default async function PerfilPublicoPage({
                   Handicap: {profile.handicap_manual}
                 </p>
               ) : null}
+              {profile.ghin_id ? (
+                <p className="text-sm text-swf-verde/70">GHIN: {profile.ghin_id}</p>
+              ) : null}
             </div>
           </div>
           {avgRating ? (

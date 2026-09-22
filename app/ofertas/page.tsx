@@ -2,9 +2,70 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Card, Badge } from "@/components/ui/Card";
 import { LinkButton } from "@/components/ui/Button";
-import { Select } from "@/components/ui/Field";
+import { ClubCombobox } from "@/components/ClubCombobox";
 import { formatFecha, formatHora, mapsUrl } from "@/lib/utils";
-import type { Club } from "@/lib/supabase/types";
+
+type OfferClub = {
+  nombre: string;
+  ciudad: string | null;
+  direccion: string | null;
+  latitud: number | null;
+  longitud: number | null;
+};
+type OfferHost = { nombre: string };
+type OfferRow = {
+  id: string;
+  fecha: string | null;
+  hora: string | null;
+  fecha_flexible: boolean;
+  pases_disponibles: number;
+  pases_confirmados: number;
+  caddie_incluido: boolean;
+  carrito_compartido: boolean;
+  clubs: OfferClub | null;
+  profiles: OfferHost | null;
+};
+
+function OfferCard({ offer }: { offer: OfferRow }) {
+  const club = offer.clubs;
+  const host = offer.profiles;
+  const cuposLibres = offer.pases_disponibles - offer.pases_confirmados;
+  return (
+    <Card className="h-full transition-shadow hover:shadow-md">
+      <Link href={`/ofertas/${offer.id}`}>
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="font-semibold text-swf-verde">{club?.nombre}</h2>
+          <Badge tone={cuposLibres > 0 ? "success" : "warning"}>
+            {cuposLibres} pase{cuposLibres === 1 ? "" : "s"} libre
+            {cuposLibres === 1 ? "" : "s"}
+          </Badge>
+        </div>
+        <p className="text-sm text-swf-verde/70">
+          {offer.fecha_flexible || !offer.fecha || !offer.hora
+            ? "Fecha a coordinar con el anfitrión"
+            : `${formatFecha(offer.fecha)} · ${formatHora(offer.hora)}`}
+        </p>
+        <p className="mt-2 text-sm text-swf-verde/60">
+          Anfitrión: {host?.nombre ?? "Socio SWF"}
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {offer.caddie_incluido ? <Badge>Caddie incluido</Badge> : null}
+          {offer.carrito_compartido ? <Badge>Carrito compartido</Badge> : null}
+        </div>
+      </Link>
+      {club?.direccion ? (
+        <a
+          href={mapsUrl(club.direccion, club)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 block text-xs text-swf-dorado underline"
+        >
+          Ver ubicación en Google Maps
+        </a>
+      ) : null}
+    </Card>
+  );
+}
 
 export default async function OfertasPage({
   searchParams,
@@ -16,23 +77,29 @@ export default async function OfertasPage({
 
   const { data: clubsData } = await supabase.from("clubs").select("*").order("nombre");
   const clubs = clubsData ?? [];
-  const estados = Array.from(new Set(clubs.map((c) => c.estado ?? "Otro"))).sort((a, b) =>
-    a.localeCompare(b, "es"),
-  );
 
-  let query = supabase
+  const offerSelect =
+    "id, fecha, hora, fecha_flexible, pases_disponibles, pases_confirmados, caddie_incluido, carrito_compartido, clubs(nombre, ciudad, direccion, latitud, longitud), profiles!tee_time_offers_host_id_fkey(nombre)";
+
+  let fixedQuery = supabase
     .from("tee_time_offers")
-    .select(
-      "*, clubs(nombre, ciudad, direccion, latitud, longitud), profiles!tee_time_offers_host_id_fkey(nombre)",
-    )
+    .select(offerSelect)
     .eq("estado", "activa")
+    .eq("fecha_flexible", false)
     .gte("fecha", new Date().toISOString().slice(0, 10))
     .order("fecha", { ascending: true });
+  if (club_id) fixedQuery = fixedQuery.eq("club_id", club_id);
+  if (fecha) fixedQuery = fixedQuery.eq("fecha", fecha);
 
-  if (club_id) query = query.eq("club_id", club_id);
-  if (fecha) query = query.eq("fecha", fecha);
+  let flexQuery = supabase
+    .from("tee_time_offers")
+    .select(offerSelect)
+    .eq("estado", "activa")
+    .eq("fecha_flexible", true)
+    .order("created_at", { ascending: false });
+  if (club_id) flexQuery = flexQuery.eq("club_id", club_id);
 
-  const { data: offers } = await query;
+  const [{ data: offers }, { data: flexOffers }] = await Promise.all([fixedQuery, flexQuery]);
 
   return (
     <div>
@@ -43,21 +110,10 @@ export default async function OfertasPage({
         </LinkButton>
       </div>
 
-      <form className="mb-6 flex flex-wrap gap-3" method="get">
-        <Select name="club_id" defaultValue={club_id ?? ""} className="max-w-xs">
-          <option value="">Todos los clubes</option>
-          {estados.map((estado) => (
-            <optgroup key={estado} label={estado}>
-              {clubs
-                .filter((c: Club) => (c.estado ?? "Otro") === estado)
-                .map((club: Club) => (
-                  <option key={club.id} value={club.id}>
-                    {club.nombre}
-                  </option>
-                ))}
-            </optgroup>
-          ))}
-        </Select>
+      <form className="mb-6 flex flex-wrap items-start gap-3" method="get">
+        <div className="w-64">
+          <ClubCombobox clubs={clubs} defaultValue={club_id ?? ""} emptyOptionLabel="Todos los clubes" />
+        </div>
         <input
           type="date"
           name="fecha"
@@ -80,64 +136,38 @@ export default async function OfertasPage({
         )}
       </form>
 
-      {!offers?.length ? (
+      {!offers?.length && !flexOffers?.length ? (
         <Card>
           <p className="text-sm text-swf-verde/70">
             No hay rondas disponibles con esos filtros por ahora.
           </p>
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {offers.map((offer) => {
-            const club = (
-              offer as unknown as {
-                clubs: {
-                  nombre: string;
-                  ciudad: string | null;
-                  direccion: string | null;
-                  latitud: number | null;
-                  longitud: number | null;
-                } | null;
-              }
-            ).clubs;
-            const host = (
-              offer as unknown as { profiles: { nombre: string } | null }
-            ).profiles;
-            const cuposLibres = offer.pases_disponibles - offer.pases_confirmados;
-            return (
-              <Card key={offer.id} className="h-full transition-shadow hover:shadow-md">
-                <Link href={`/ofertas/${offer.id}`}>
-                  <div className="mb-2 flex items-center justify-between">
-                    <h2 className="font-semibold text-swf-verde">{club?.nombre}</h2>
-                    <Badge tone={cuposLibres > 0 ? "success" : "warning"}>
-                      {cuposLibres} pase{cuposLibres === 1 ? "" : "s"} libre
-                      {cuposLibres === 1 ? "" : "s"}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-swf-verde/70">
-                    {formatFecha(offer.fecha)} · {formatHora(offer.hora)}
-                  </p>
-                  <p className="mt-2 text-sm text-swf-verde/60">
-                    Anfitrión: {host?.nombre ?? "Socio SWF"}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {offer.caddie_incluido ? <Badge>Caddie incluido</Badge> : null}
-                    {offer.carrito_compartido ? <Badge>Carrito compartido</Badge> : null}
-                  </div>
-                </Link>
-                {club?.direccion ? (
-                  <a
-                    href={mapsUrl(club.direccion, club)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-3 block text-xs text-swf-dorado underline"
-                  >
-                    Ver ubicación en Google Maps
-                  </a>
-                ) : null}
-              </Card>
-            );
-          })}
+        <div className="space-y-8">
+          {offers?.length ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {(offers as unknown as OfferRow[]).map((offer) => (
+                <OfferCard key={offer.id} offer={offer} />
+              ))}
+            </div>
+          ) : null}
+
+          {flexOffers?.length ? (
+            <div>
+              <h2 className="mb-3 text-lg font-semibold text-swf-verde">
+                Disponibilidad flexible
+              </h2>
+              <p className="mb-3 text-sm text-swf-verde/60">
+                Estos anfitriones no fijaron una fecha — coordinan directo contigo una vez que
+                aprueben tu solicitud.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {(flexOffers as unknown as OfferRow[]).map((offer) => (
+                  <OfferCard key={offer.id} offer={offer} />
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
       )}
     </div>

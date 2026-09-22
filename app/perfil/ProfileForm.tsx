@@ -5,7 +5,7 @@ import { updateProfile } from "./actions";
 import { Button } from "@/components/ui/Button";
 import { FormField, Input, Textarea } from "@/components/ui/Field";
 import { Card } from "@/components/ui/Card";
-import { ClubSelect } from "@/components/ClubSelect";
+import { ClubCombobox } from "@/components/ClubCombobox";
 import type { Club, Profile } from "@/lib/supabase/types";
 
 export function ProfileForm({
@@ -26,7 +26,7 @@ export function ProfileForm({
           <Input id="nombre" name="nombre" defaultValue={profile.nombre} required />
         </FormField>
         <FormField label="Club" htmlFor="club_id">
-          <ClubSelect clubs={clubs} defaultValue={profile.club_id} />
+          <ClubCombobox clubs={clubs} defaultValue={profile.club_id} />
         </FormField>
         <FormField label="Handicap" htmlFor="handicap_manual">
           <Input
@@ -47,13 +47,12 @@ export function ProfileForm({
             placeholder="Solo se comparte cuando confirmes una ronda"
           />
         </FormField>
-        <FormField label="Foto (URL, opcional)" htmlFor="foto_url">
+        <FormField label="GHIN ID (opcional)" htmlFor="ghin_id">
           <Input
-            id="foto_url"
-            name="foto_url"
-            type="url"
-            defaultValue={profile.foto_url ?? ""}
-            placeholder="https://..."
+            id="ghin_id"
+            name="ghin_id"
+            defaultValue={profile.ghin_id ?? ""}
+            placeholder="Ej. 4123456"
           />
         </FormField>
         <FormField label="Bio corta" htmlFor="bio">
@@ -65,9 +64,6 @@ export function ProfileForm({
           />
         </FormField>
         {state?.error ? <p className="text-sm text-red-700">{state.error}</p> : null}
-        {state?.success ? (
-          <p className="text-sm text-green-700">Perfil actualizado.</p>
-        ) : null}
         <Button type="submit" disabled={pending}>
           {pending ? "Guardando..." : "Guardar cambios"}
         </Button>

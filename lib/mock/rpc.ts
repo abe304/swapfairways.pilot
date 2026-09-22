@@ -31,9 +31,12 @@ export function create_join_request(currentUserId: string, args: { p_offer_id: s
   );
   if (activeExisting) return { error: "Ya tienes una solicitud activa para esta oferta" };
 
+  const club = store.clubs.find((c) => c.id === offer.club_id);
+  const costo = (club?.costo_creditos as number) ?? 1;
+
   const profile = store.profiles.find((p) => p.id === currentUserId);
-  if (!profile || (profile.creditos_balance as number) < 1) {
-    return { error: "No tienes créditos suficientes para solicitar esta ronda" };
+  if (!profile || (profile.creditos_balance as number) < costo) {
+    return { error: `No tienes créditos suficientes para solicitar esta ronda (cuesta ${costo} créditos)` };
   }
 
   const request: MockRow = {
@@ -41,7 +44,7 @@ export function create_join_request(currentUserId: string, args: { p_offer_id: s
     offer_id: args.p_offer_id,
     guest_id: currentUserId,
     estado: "pendiente",
-    creditos_cobrados: 1,
+    creditos_cobrados: costo,
     created_at: nowIso(),
     aprobado_at: null,
     jugado_at: null,
@@ -95,7 +98,7 @@ export function mark_request_played(currentUserId: string, args: { p_request_id:
     return { error: "Solo se puede marcar como jugada una solicitud aprobada" };
   }
   const today = new Date().toISOString().slice(0, 10);
-  if ((offer.fecha as string) > today) {
+  if (!offer.fecha_flexible && (offer.fecha as string) > today) {
     return { error: "Aún no es la fecha de la ronda" };
   }
 

@@ -15,6 +15,21 @@ const ESTADO_LABEL: Record<string, string> = {
   cancelado: "Solicitud cancelada",
 };
 
+type OfferClub = {
+  nombre: string;
+  ciudad: string | null;
+  direccion: string | null;
+  tipo: string;
+  latitud: number | null;
+  longitud: number | null;
+  reglamento: string | null;
+  requiere_caddie_invitado: boolean;
+  carrito_obligatorio: boolean;
+  requiere_ghin: boolean;
+  recomendacion_llegada: string | null;
+  costo_creditos: number;
+};
+
 export default async function OfertaDetallePage({
   params,
 }: {
@@ -27,33 +42,34 @@ export default async function OfertaDetallePage({
   const { data: offer } = await supabase
     .from("tee_time_offers")
     .select(
-      "*, clubs(nombre, ciudad, direccion, tipo, latitud, longitud), profiles!tee_time_offers_host_id_fkey(id, nombre, handicap_manual)",
+      "*, clubs(nombre, ciudad, direccion, tipo, latitud, longitud, reglamento, requiere_caddie_invitado, carrito_obligatorio, requiere_ghin, recomendacion_llegada, costo_creditos), profiles!tee_time_offers_host_id_fkey(id, nombre, handicap_manual, ghin_id)",
     )
     .eq("id", id)
     .single();
 
   if (!offer) notFound();
 
-  const club = (
-    offer as unknown as {
-      clubs: {
-        nombre: string;
-        ciudad: string | null;
-        direccion: string | null;
-        tipo: string;
-        latitud: number | null;
-        longitud: number | null;
-      } | null;
-    }
-  ).clubs;
+  const club = (offer as unknown as { clubs: OfferClub | null }).clubs;
   const host = (
     offer as unknown as {
-      profiles: { id: string; nombre: string; handicap_manual: number | null } | null;
+      profiles: {
+        id: string;
+        nombre: string;
+        handicap_manual: number | null;
+        ghin_id: string | null;
+      } | null;
     }
   ).profiles;
 
   const isHost = offer.host_id === profile.id;
   const cuposLibres = offer.pases_disponibles - offer.pases_confirmados;
+  const costoCreditos = club?.costo_creditos ?? 1;
+  const tieneReglas =
+    club?.reglamento ||
+    club?.requiere_caddie_invitado ||
+    club?.carrito_obligatorio ||
+    club?.requiere_ghin ||
+    club?.recomendacion_llegada;
 
   const { data: myRequest } = await supabase
     .from("requests")
@@ -97,7 +113,9 @@ export default async function OfertaDetallePage({
           </Badge>
         </div>
         <p className="text-lg text-swf-verde">
-          {formatFecha(offer.fecha)} · {formatHora(offer.hora)}
+          {offer.fecha_flexible || !offer.fecha || !offer.hora
+            ? "Fecha a coordinar con el anfitrión"
+            : `${formatFecha(offer.fecha)} · ${formatHora(offer.hora)}`}
         </p>
         <p className="mt-1 text-sm text-swf-verde/70">
           {cuposLibres} de {offer.pases_disponibles} pases disponibles
@@ -108,6 +126,9 @@ export default async function OfertaDetallePage({
           {offer.carrito_compartido ? <Badge>Carrito compartido</Badge> : null}
           {offer.costo_estimado ? (
             <Badge tone="gold">Costo en campo: {formatMoneda(offer.costo_estimado)}</Badge>
+          ) : null}
+          {costoCreditos !== 1 ? (
+            <Badge tone="gold">Vale {costoCreditos} créditos</Badge>
           ) : null}
         </div>
 
@@ -123,6 +144,30 @@ export default async function OfertaDetallePage({
           </p>
         </div>
       </Card>
+
+      {tieneReglas ? (
+        <Card>
+          <h2 className="mb-2 text-sm font-semibold text-swf-verde">Reglas del club</h2>
+          <div className="mb-3 flex flex-wrap gap-2">
+            {club?.requiere_caddie_invitado ? (
+              <Badge tone="warning">Caddie obligatorio para invitados</Badge>
+            ) : null}
+            {club?.carrito_obligatorio ? (
+              <Badge tone="warning">Renta de carrito obligatoria</Badge>
+            ) : null}
+            {club?.requiere_ghin ? <Badge tone="warning">Debes mostrar tu GHIN</Badge> : null}
+          </div>
+          {club?.reglamento ? (
+            <p className="whitespace-pre-line text-sm text-swf-verde/80">{club.reglamento}</p>
+          ) : null}
+          {club?.recomendacion_llegada ? (
+            <p className="mt-2 text-sm text-swf-verde/70">
+              <span className="font-medium">Recomendación de llegada:</span>{" "}
+              {club.recomendacion_llegada}
+            </p>
+          ) : null}
+        </Card>
+      ) : null}
 
       <Card>
         <h2 className="mb-2 text-sm font-semibold text-swf-verde">
@@ -148,6 +193,11 @@ export default async function OfertaDetallePage({
               <p>
                 <span className="font-medium">Contacto del anfitrión:</span>{" "}
                 {hostContact || "No registrado — coordina a través de la app."}
+              </p>
+            ) : null}
+            {isHost && host?.ghin_id ? (
+              <p>
+                <span className="font-medium">Tu GHIN:</span> {host.ghin_id}
               </p>
             ) : null}
             {offer.costo_estimado ? (
@@ -179,7 +229,7 @@ export default async function OfertaDetallePage({
             {ESTADO_LABEL[myRequest.estado]}
           </p>
         ) : cuposLibres > 0 && offer.estado === "activa" ? (
-          <RequestButton offerId={offer.id} />
+          <RequestButton offerId={offer.id} costoCreditos={costoCreditos} />
         ) : (
           <p className="text-sm text-swf-verde/60">Ya no quedan pases disponibles.</p>
         )}

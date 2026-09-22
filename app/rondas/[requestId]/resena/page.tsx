@@ -23,7 +23,7 @@ export default async function ResenaPage({
 
   const offer = (
     request as unknown as {
-      tee_time_offers: { host_id: string; fecha: string; clubs: { nombre: string } | null };
+      tee_time_offers: { host_id: string; fecha: string | null; clubs: { nombre: string } | null };
     }
   ).tee_time_offers;
 

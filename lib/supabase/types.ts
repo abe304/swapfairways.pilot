@@ -21,6 +21,12 @@ export type Club = {
   tipo: ClubTipo;
   latitud: number | null;
   longitud: number | null;
+  reglamento: string | null;
+  requiere_caddie_invitado: boolean;
+  carrito_obligatorio: boolean;
+  requiere_ghin: boolean;
+  recomendacion_llegada: string | null;
+  costo_creditos: number;
   created_at: string;
 }
 
@@ -30,6 +36,7 @@ export type Profile = {
   club_id: string | null;
   handicap_manual: number | null;
   foto_url: string | null;
+  ghin_id: string | null;
   bio: string | null;
   creditos_balance: number;
   is_admin: boolean;
@@ -46,8 +53,9 @@ export type TeeTimeOffer = {
   id: string;
   host_id: string;
   club_id: string;
-  fecha: string;
-  hora: string;
+  fecha: string | null;
+  hora: string | null;
+  fecha_flexible: boolean;
   pases_disponibles: number;
   pases_confirmados: number;
   caddie_incluido: boolean;
@@ -135,8 +143,6 @@ export interface Database {
         Insert: Partial<TeeTimeOffer> & {
           host_id: string;
           club_id: string;
-          fecha: string;
-          hora: string;
           pases_disponibles: number;
         };
         Update: Partial<TeeTimeOffer>;

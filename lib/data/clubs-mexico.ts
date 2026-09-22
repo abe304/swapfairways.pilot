@@ -59,6 +59,7 @@ export const CLUBES_PRIVADOS: ClubSeed[] = [
   { nombre: "Club Campestre de León", ciudad: "León", estado: "Guanajuato", direccion: "Club Campestre de León, León, Guanajuato, México", tipo: "privado" },
   { nombre: "Club Campestre de Saltillo", ciudad: "Saltillo", estado: "Coahuila", direccion: "Club Campestre de Saltillo, Saltillo, Coahuila, México", tipo: "privado" },
   { nombre: "Club Campestre de Aguascalientes", ciudad: "Aguascalientes", estado: "Aguascalientes", direccion: "Club Campestre de Aguascalientes, Aguascalientes, Aguascalientes, México", tipo: "privado" },
+  { nombre: "El Cielo Country Club", ciudad: "Tlajomulco de Zúñiga", estado: "Jalisco", direccion: "Paseo del Cielo 1, Tlajomulco de Zúñiga, Jalisco, México", tipo: "privado" },
 ];
 
 export const CLUBES_PUBLICOS: ClubSeed[] = [
@@ -90,7 +91,7 @@ export const CLUBES_PUBLICOS: ClubSeed[] = [
   { nombre: "Bosque Real Ejecutivo", ciudad: "Naucalpan de Juárez", estado: "Estado de México", direccion: "Carretera México Huixquilucan No. 180, Col. San Cristóbal Texcalucan, 52774 Naucalpan, Méx.", tipo: "publico" },
   { nombre: "Estrella del Mar Golf y Country Club", ciudad: "Mazatlán", estado: "Sinaloa", direccion: "Carr. Barrón, Cam. a Isla de la Piedra km. 10 s/n, Mazatlán, Sin.", tipo: "publico" },
   { nombre: "Paraiso del Mar Golf Club", ciudad: "La Paz", estado: "Baja California Sur", direccion: "Paseo de Ciruelo SN, Paraíso del Mar, La Paz, B.C.S.", tipo: "publico" },
-  { nombre: "Balvanera Golf y Polo Country Club", ciudad: "Corregidora", estado: "Querétaro", direccion: "Carretera Libre a Celaya KM 10, Corregidora, Qro.", tipo: "publico" },
+  { nombre: "Balvanera Golf y Polo Country Club", ciudad: "Corregidora", estado: "Querétaro", direccion: "Carretera Libre a Celaya KM 10, Corregidora, Qro.", tipo: "publico", latitud: 20.540511, longitud: -100.469651 },
   { nombre: "Club de Golf El Valle", ciudad: "Ocoyoacac", estado: "Estado de México", direccion: "KM 32.5 carretera México - Toluca, Ocoyoacac, Méx.", tipo: "publico" },
   { nombre: "Gran Coyote Golf", ciudad: "Solidaridad", estado: "Quintana Roo", direccion: "México 307 km 294, Solidaridad, 77710 Playa del Carmen, Q.R.", tipo: "publico" },
   { nombre: "Club de Golf Vista Hermosa", ciudad: "San Agustín Etla", estado: "Oaxaca", direccion: "Carretera a San Agustín Etla, Supermanzana Kilómetro 5, 68247 San Sebastián Etla, Oax.", tipo: "publico" },
@@ -136,7 +137,6 @@ export const CLUBES_FEDERACION: ClubSeed[] = [
   { nombre: 'El Camaleón Golf Course at Mayakoba', ciudad: '', estado: 'Quintana Roo', direccion: 'El Camaleón Golf Course at Mayakoba, Quintana Roo, México', tipo: 'publico', latitud: 20.6897606, longitud: -87.0311157 },
   { nombre: 'Zibatá Golf', ciudad: '', estado: 'Querétaro', direccion: 'Zibatá Golf, Querétaro, México', tipo: 'publico', latitud: 20.6825675, longitud: -100.3377151 },
   { nombre: 'Club de Golf y Deportivo Las Aves', ciudad: '', estado: 'Nuevo León', direccion: 'Club de Golf y Deportivo Las Aves, Nuevo León, México', tipo: 'publico', latitud: 25.7527294, longitud: -100.039566 },
-  { nombre: 'Gary Player Signature Golf Club El Cortés', ciudad: '', estado: 'Baja California Sur', direccion: 'Gary Player Signature Golf Club El Cortés, Baja California Sur, México', tipo: 'publico', latitud: 24.2219271, longitud: -110.3029533 },
   { nombre: 'Country Club de Chapala', ciudad: '', estado: 'Jalisco', direccion: 'Country Club de Chapala, Jalisco, México', tipo: 'publico', latitud: 20.3354909, longitud: -103.1216892 },
   { nombre: 'Club Refineria Madero', ciudad: '', estado: 'Tamaulipas', direccion: 'Club Refineria Madero, Tamaulipas, México', tipo: 'publico', latitud: 22.2732222, longitud: -97.8103013 },
   { nombre: 'Las Cañadas Country Club', ciudad: '', estado: 'Jalisco', direccion: 'Las Cañadas Country Club, Jalisco, México', tipo: 'publico', latitud: 20.7815379, longitud: -103.370138 },
@@ -200,7 +200,6 @@ export const CLUBES_FEDERACION: ClubSeed[] = [
   { nombre: 'Tajin Golf Club', ciudad: '', estado: 'Veracruz', direccion: 'Tajin Golf Club, Veracruz, México', tipo: 'privado', latitud: 20.4887945, longitud: -97.4915988 },
   { nombre: 'La Vista Country Club', ciudad: '', estado: 'Puebla', direccion: 'La Vista Country Club, Puebla, México', tipo: 'privado', latitud: 19.0082973, longitud: -98.2546344 },
   { nombre: 'Club Campestre de Puebla', ciudad: '', estado: 'Puebla', direccion: 'Club Campestre de Puebla, Puebla, México', tipo: 'privado', latitud: 19.0133414, longitud: -98.2334886 },
-  { nombre: 'Balvanera Polo Golf & Country Club', ciudad: '', estado: 'Querétaro', direccion: 'Balvanera Polo Golf & Country Club, Querétaro, México', tipo: 'privado', latitud: 20.540511, longitud: -100.469651 },
   { nombre: 'Club de Golf Lagunas de Miralta', ciudad: '', estado: 'Tamaulipas', direccion: 'Club de Golf Lagunas de Miralta, Tamaulipas, México', tipo: 'privado', latitud: 22.3510297, longitud: -97.9007367 },
   { nombre: 'Gran Reserva Golf Resort & Country Club', ciudad: '', estado: 'Morelos', direccion: 'Gran Reserva Golf Resort & Country Club, Morelos, México', tipo: 'privado', latitud: 18.850645, longitud: -99.681842 },
   { nombre: 'Club de Golf Cañada de Santa Fe', ciudad: '', estado: 'Ciudad de México', direccion: 'Club de Golf Cañada de Santa Fe, Ciudad de México, México', tipo: 'privado', latitud: 19.3517868, longitud: -99.2694116 },

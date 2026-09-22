@@ -1,5 +1,6 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
@@ -11,7 +12,7 @@ export async function updateProfile(_prevState: unknown, formData: FormData) {
   const clubId = String(formData.get("club_id") ?? "").trim();
   const handicapRaw = String(formData.get("handicap_manual") ?? "").trim();
   const bio = String(formData.get("bio") ?? "").trim();
-  const fotoUrl = String(formData.get("foto_url") ?? "").trim();
+  const ghinId = String(formData.get("ghin_id") ?? "").trim();
   const telefono = String(formData.get("telefono") ?? "").trim();
 
   if (!nombre) {
@@ -31,7 +32,7 @@ export async function updateProfile(_prevState: unknown, formData: FormData) {
       club_id: clubId || null,
       handicap_manual,
       bio: bio || null,
-      foto_url: fotoUrl || null,
+      ghin_id: ghinId || null,
     })
     .eq("id", profile.id);
 
@@ -48,5 +49,5 @@ export async function updateProfile(_prevState: unknown, formData: FormData) {
   }
 
   revalidatePath("/perfil");
-  return { success: true };
+  redirect("/ofertas");
 }

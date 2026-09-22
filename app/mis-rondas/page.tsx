@@ -8,8 +8,9 @@ import { ActionButton } from "./ActionButton";
 
 type HostedOffer = {
   id: string;
-  fecha: string;
-  hora: string;
+  fecha: string | null;
+  hora: string | null;
+  fecha_flexible: boolean;
   pases_disponibles: number;
   pases_confirmados: number;
   clubs: { nombre: string } | null;
@@ -26,13 +27,19 @@ type GuestRequest = {
   estado: string;
   offer_id: string;
   tee_time_offers: {
-    fecha: string;
-    hora: string;
+    fecha: string | null;
+    hora: string | null;
+    fecha_flexible: boolean;
     host_id: string;
     clubs: { nombre: string } | null;
     profiles: { nombre: string } | null;
   } | null;
 };
+
+function offerFechaLabel(offer: { fecha: string | null; hora: string | null; fecha_flexible: boolean }) {
+  if (offer.fecha_flexible || !offer.fecha || !offer.hora) return "Fecha a coordinar";
+  return `${formatFecha(offer.fecha)} · ${formatHora(offer.hora)}`;
+}
 
 const ESTADO_TONE: Record<string, "default" | "gold" | "success" | "warning" | "danger"> = {
   pendiente: "warning",
@@ -54,7 +61,7 @@ export default async function MisRondasPage({
   const { data: hostedOffersRaw } = await supabase
     .from("tee_time_offers")
     .select(
-      "id, fecha, hora, pases_disponibles, pases_confirmados, clubs(nombre), requests(id, estado, guest_id, profiles!requests_guest_id_fkey(nombre))",
+      "id, fecha, hora, fecha_flexible, pases_disponibles, pases_confirmados, clubs(nombre), requests(id, estado, guest_id, profiles!requests_guest_id_fkey(nombre))",
     )
     .eq("host_id", profile.id)
     .order("fecha", { ascending: true });
@@ -63,7 +70,7 @@ export default async function MisRondasPage({
   const { data: myRequestsRaw } = await supabase
     .from("requests")
     .select(
-      "id, estado, offer_id, tee_time_offers(fecha, hora, host_id, clubs(nombre), profiles!tee_time_offers_host_id_fkey(nombre))",
+      "id, estado, offer_id, tee_time_offers(fecha, hora, fecha_flexible, host_id, clubs(nombre), profiles!tee_time_offers_host_id_fkey(nombre))",
     )
     .eq("guest_id", profile.id)
     .order("created_at", { ascending: false });
@@ -133,7 +140,8 @@ export default async function MisRondasPage({
         ) : (
           <div className="space-y-4">
             {hostedOffers.map((offer) => {
-              const puedeMarcarJugada = new Date(offer.fecha) <= new Date();
+              const puedeMarcarJugada =
+                offer.fecha_flexible || (!!offer.fecha && new Date(offer.fecha) <= new Date());
               return (
                 <Card key={offer.id}>
                   <div className="mb-3 flex items-center justify-between">
@@ -142,8 +150,8 @@ export default async function MisRondasPage({
                         {offer.clubs?.nombre}
                       </Link>
                       <p className="text-sm text-swf-verde/70">
-                        {formatFecha(offer.fecha)} · {formatHora(offer.hora)} ·{" "}
-                        {offer.pases_confirmados}/{offer.pases_disponibles} confirmados
+                        {offerFechaLabel(offer)} · {offer.pases_confirmados}/
+                        {offer.pases_disponibles} confirmados
                       </p>
                     </div>
                   </div>
@@ -237,8 +245,7 @@ export default async function MisRondasPage({
                       {req.tee_time_offers?.clubs?.nombre}
                     </Link>
                     <p className="text-sm text-swf-verde/70">
-                      {req.tee_time_offers ? formatFecha(req.tee_time_offers.fecha) : ""} ·{" "}
-                      {req.tee_time_offers ? formatHora(req.tee_time_offers.hora) : ""} · Anfitrión:{" "}
+                      {req.tee_time_offers ? offerFechaLabel(req.tee_time_offers) : ""} · Anfitrión:{" "}
                       {req.tee_time_offers?.profiles?.nombre}
                     </p>
                   </div>

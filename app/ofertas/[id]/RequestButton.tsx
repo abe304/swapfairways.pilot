@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import { solicitarUnion } from "../actions";
 import { Button } from "@/components/ui/Button";
 
-export function RequestButton({ offerId }: { offerId: string }) {
+export function RequestButton({
+  offerId,
+  costoCreditos = 1,
+}: {
+  offerId: string;
+  costoCreditos?: number;
+}) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
@@ -26,7 +32,9 @@ export function RequestButton({ offerId }: { offerId: string }) {
           })
         }
       >
-        {pending ? "Enviando..." : "Solicitar unión (1 crédito)"}
+        {pending
+          ? "Enviando..."
+          : `Solicitar unión (${costoCreditos} crédito${costoCreditos === 1 ? "" : "s"})`}
       </Button>
       {error ? <p className="mt-2 text-sm text-red-700">{error}</p> : null}
     </div>

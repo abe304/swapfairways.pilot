@@ -55,7 +55,10 @@ Deliberadamente no incluido (ver brief original para el detalle de por qué):
 ### 1. Crear el proyecto de Supabase
 
 1. Crea un proyecto nuevo en [supabase.com](https://supabase.com/dashboard).
-2. Ve a **SQL Editor** y ejecuta el contenido de [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql). Esto crea las tablas, triggers, funciones y políticas de RLS.
+2. Ve a **SQL Editor** y ejecuta, en orden, el contenido de cada archivo en [`supabase/migrations/`](supabase/migrations/):
+   - `0001_init.sql` — tablas, triggers, funciones y políticas de RLS.
+   - `0002_clubs_mexico.sql` — catálogo de 166 campos de golf de México.
+   - `0003_reglas_flexibles_ghin.sql` — GHIN, reglas/obligaciones por club, costo variable en créditos, ofertas con fecha flexible.
 3. Ve a **Project Settings > API** y copia la `Project URL`, la `anon public key` y la `service_role key`.
 
 ### 2. Variables de entorno
@@ -94,7 +97,15 @@ Abre [http://localhost:3000](http://localhost:3000). Si corriste el seed, puedes
 
 1. Sube el repo a GitHub.
 2. Importa el repo en [Vercel](https://vercel.com/new).
-3. Agrega las variables de entorno `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` en la configuración del proyecto (la `service_role key` **no** se necesita en producción — solo se usa para el seed local).
+3. Agrega las variables de entorno `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` en la configuración del proyecto (esta última ya se usa en producción para poder mandar el email de nueva solicitud al anfitrión — ver siguiente sección).
+
+### Notificación por email al anfitrión (opcional)
+
+Cuando alguien solicita unirse a una ronda, la app intenta avisarle por email al anfitrión. Es opcional — sin configurarlo, todo funciona igual, simplemente no se manda el correo.
+
+1. Crea una cuenta gratis en [resend.com](https://resend.com) y genera un API key.
+2. Agrega `RESEND_API_KEY` en las variables de entorno de Vercel (y en tu `.env.local` si quieres probarlo en local).
+3. Puedes dejar el remitente de pruebas de Resend (`onboarding@resend.dev`, ya viene por default) o configurar `RESEND_FROM_EMAIL` con tu propio dominio verificado en Resend.
 
 ## Administración durante el piloto
 
@@ -104,13 +115,14 @@ No hay panel de admin dedicado. Usa **Supabase Studio** (Table Editor) directame
 - Resolver disputas (ej. un anfitrión no marca una ronda como jugada, o un no-show): edita directamente `requests` y, si aplica, agrega los `credit_transactions` correspondientes.
 - Ver todas las solicitudes: tabla `requests`.
 - Verificar manualmente el handicap capturado por cada socio: columna `handicap_manual` en `profiles`.
+- Configurar reglas/obligaciones de un club (caddie, carrito, GHIN obligatorios, recomendación de llegada) y su costo en créditos: tabla `clubs`, columnas `reglamento`, `requiere_caddie_invitado`, `carrito_obligatorio`, `requiere_ghin`, `recomendacion_llegada`, `costo_creditos`.
 
 ## Modelo de datos
 
-Ver [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql) — es la fuente de verdad. Resumen:
+Ver [`supabase/migrations/`](supabase/migrations/) — es la fuente de verdad. Resumen:
 
-- `clubs`, `profiles` (1:1 con `auth.users`), `profile_contacts` (teléfono, visible solo entre partes con una solicitud aprobada/jugada)
-- `tee_time_offers`, `requests`, `credit_transactions` (ledger — `profiles.creditos_balance` se mantiene por trigger), `reviews`
+- `clubs` (incluye `reglamento`, obligaciones estructuradas `requiere_caddie_invitado`/`carrito_obligatorio`/`requiere_ghin`, `recomendacion_llegada` y `costo_creditos` — todo editable desde Supabase Studio por ahora, no hay todavía un login separado para que cada club administre lo suyo), `profiles` (1:1 con `auth.users`, incluye `ghin_id`), `profile_contacts` (teléfono, visible solo entre partes con una solicitud aprobada/jugada)
+- `tee_time_offers` (`fecha`/`hora` son nullable — `fecha_flexible = true` significa "sin fecha fija, a coordinar con quien solicite"), `requests` (`creditos_cobrados` refleja el `costo_creditos` del club al momento de solicitar), `credit_transactions` (ledger — `profiles.creditos_balance` se mantiene por trigger), `reviews`
 - Toda mutación sensible (crear solicitud, aprobar, rechazar, marcar jugada) pasa por funciones `SECURITY DEFINER` (`create_join_request`, `approve_request`, `reject_request`, `mark_request_played`) que validan reglas de negocio server-side, no solo en el cliente.
 
 ## Catálogo de clubes
