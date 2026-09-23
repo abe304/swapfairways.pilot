@@ -122,10 +122,20 @@ export default async function OfertaDetallePage({
         </p>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          {offer.caddie_incluido ? <Badge>Caddie incluido</Badge> : null}
-          {offer.carrito_compartido ? <Badge>Carrito compartido</Badge> : null}
+          {offer.caddie_incluido ? (
+            <Badge>
+              Caddie incluido
+              {offer.costo_caddie ? ` (${formatMoneda(offer.costo_caddie)})` : ""}
+            </Badge>
+          ) : null}
+          {offer.carrito_compartido ? (
+            <Badge>
+              Carrito compartido
+              {offer.costo_carrito ? ` (${formatMoneda(offer.costo_carrito)})` : ""}
+            </Badge>
+          ) : null}
           {offer.costo_estimado ? (
-            <Badge tone="gold">Costo en campo: {formatMoneda(offer.costo_estimado)}</Badge>
+            <Badge tone="gold">Costo de visita: {formatMoneda(offer.costo_estimado)}</Badge>
           ) : null}
           {costoCreditos !== 1 ? (
             <Badge tone="gold">Vale {costoCreditos} créditos</Badge>
@@ -200,12 +210,19 @@ export default async function OfertaDetallePage({
                 <span className="font-medium">Tu GHIN:</span> {host.ghin_id}
               </p>
             ) : null}
-            {offer.costo_estimado ? (
-              <p className="rounded-md bg-swf-dorado/10 p-3 text-swf-verde">
-                Recuerda llevar aprox. {formatMoneda(offer.costo_estimado)} para cubrir
-                caddie/carrito en campo. Este costo se paga directo en el club, no a través
-                de SWF.
-              </p>
+            {offer.costo_estimado || offer.costo_caddie || offer.costo_carrito ? (
+              <div className="rounded-md bg-swf-dorado/10 p-3 text-swf-verde">
+                <p>Costos aproximados a pagar directo en el club (no a través de SWF):</p>
+                <ul className="mt-1 list-disc pl-5">
+                  {offer.costo_estimado ? (
+                    <li>Visita: {formatMoneda(offer.costo_estimado)}</li>
+                  ) : null}
+                  {offer.costo_caddie ? <li>Caddie: {formatMoneda(offer.costo_caddie)}</li> : null}
+                  {offer.costo_carrito ? (
+                    <li>Carrito: {formatMoneda(offer.costo_carrito)}</li>
+                  ) : null}
+                </ul>
+              </div>
             ) : null}
           </div>
         ) : (

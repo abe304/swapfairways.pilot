@@ -63,6 +63,7 @@ function buildInitialStore(): Store {
     requiere_ghin: false,
     recomendacion_llegada: null,
     costo_creditos: 1,
+    costo_visita_sugerido: null,
     created_at: nowIso(),
   }));
   const findClubId = (nombre: string) => {
@@ -81,6 +82,7 @@ function buildInitialStore(): Store {
     clubSantaAnita.requiere_ghin = true;
     clubSantaAnita.recomendacion_llegada =
       "Llega al menos 45 minutos antes de tu hora de salida para registro y calentamiento.";
+    clubSantaAnita.costo_visita_sugerido = 1200;
   }
 
   // Ejemplo de costo variable en créditos (punto 8): un club de mayor

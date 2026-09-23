@@ -27,6 +27,7 @@ export type Club = {
   requiere_ghin: boolean;
   recomendacion_llegada: string | null;
   costo_creditos: number;
+  costo_visita_sugerido: number | null;
   created_at: string;
 }
 
@@ -61,6 +62,8 @@ export type TeeTimeOffer = {
   caddie_incluido: boolean;
   carrito_compartido: boolean;
   costo_estimado: number | null;
+  costo_caddie: number | null;
+  costo_carrito: number | null;
   nota: string | null;
   estado: OfferEstado;
   created_at: string;

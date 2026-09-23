@@ -12,22 +12,27 @@ export async function createOffer(_prevState: unknown, formData: FormData) {
 
   const club_id = String(formData.get("club_id") ?? "");
   const flexible = formData.get("fecha_flexible") === "on";
-  const fechas = formData.getAll("fechas").map(String).filter(Boolean);
-  const hora = String(formData.get("hora") ?? "");
+  const fechaHoraPairs = formData
+    .getAll("fecha_hora_pairs")
+    .map(String)
+    .filter(Boolean)
+    .map((pair) => {
+      const [fecha, hora] = pair.split("|");
+      return { fecha, hora };
+    });
   const pases_disponibles = Number(formData.get("pases_disponibles") ?? 1);
   const caddie_incluido = formData.get("caddie_incluido") === "on";
   const carrito_compartido = formData.get("carrito_compartido") === "on";
   const costoRaw = String(formData.get("costo_estimado") ?? "").trim();
+  const costoCaddieRaw = String(formData.get("costo_caddie") ?? "").trim();
+  const costoCarritoRaw = String(formData.get("costo_carrito") ?? "").trim();
   const nota = String(formData.get("nota") ?? "").trim();
 
   if (!club_id) {
     return { error: "Selecciona un club." };
   }
-  if (!flexible && fechas.length === 0) {
-    return { error: "Agrega al menos una fecha, o marca disponibilidad flexible." };
-  }
-  if (!flexible && !hora) {
-    return { error: "La hora es obligatoria si no es disponibilidad flexible." };
+  if (!flexible && fechaHoraPairs.length === 0) {
+    return { error: "Agrega al menos una fecha con su hora, o marca disponibilidad flexible." };
   }
   if (!pases_disponibles || pases_disponibles < 1) {
     return { error: "Debes ofrecer al menos 1 pase." };
@@ -38,10 +43,17 @@ export async function createOffer(_prevState: unknown, formData: FormData) {
     };
   }
 
+  const parseCosto = (raw: string) => {
+    if (!raw) return null;
+    const n = Number(raw);
+    return Number.isNaN(n) ? null : n;
+  };
   const costo_estimado = costoRaw ? Number(costoRaw) : 0;
   if (costoRaw && Number.isNaN(costo_estimado)) {
     return { error: "El costo estimado debe ser un número." };
   }
+  const costo_caddie = caddie_incluido ? parseCosto(costoCaddieRaw) : null;
+  const costo_carrito = carrito_compartido ? parseCosto(costoCarritoRaw) : null;
 
   const base = {
     host_id: profile.id,
@@ -50,17 +62,19 @@ export async function createOffer(_prevState: unknown, formData: FormData) {
     caddie_incluido,
     carrito_compartido,
     costo_estimado,
+    costo_caddie,
+    costo_carrito,
     nota: nota || null,
   };
 
   const supabase = await createClient();
 
   // Fecha flexible: una sola oferta sin fecha/hora fija, a coordinar con
-  // quien solicite unirse. Fecha fija: una oferta POR cada fecha elegida
-  // (multi-select), mismos parámetros y misma hora para todas.
+  // quien solicite unirse. Fecha fija: una oferta por cada par
+  // fecha+hora elegido (cada fecha puede tener su propia hora).
   const rows = flexible
     ? [{ ...base, fecha_flexible: true }]
-    : fechas.map((fecha) => ({ ...base, fecha, hora, fecha_flexible: false }));
+    : fechaHoraPairs.map(({ fecha, hora }) => ({ ...base, fecha, hora, fecha_flexible: false }));
 
   const { data, error } = await supabase
     .from("tee_time_offers")
@@ -69,7 +83,12 @@ export async function createOffer(_prevState: unknown, formData: FormData) {
     .order("created_at", { ascending: true });
 
   if (error || !data || data.length === 0) {
-    return { error: "No pudimos publicar tu oferta. Intenta de nuevo." };
+    console.error("[createOffer] Error publicando oferta:", error);
+    return {
+      error: error
+        ? `No pudimos publicar tu oferta (${error.message}).`
+        : "No pudimos publicar tu oferta. Intenta de nuevo.",
+    };
   }
 
   revalidatePath("/ofertas");

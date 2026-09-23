@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, Badge } from "@/components/ui/Card";
 import { LinkButton } from "@/components/ui/Button";
 import { ClubCombobox } from "@/components/ClubCombobox";
-import { formatFecha, formatHora, mapsUrl } from "@/lib/utils";
+import { formatFecha, formatHora, mapsUrl, nombreConHc } from "@/lib/utils";
 
 type OfferClub = {
   nombre: string;
@@ -12,7 +12,7 @@ type OfferClub = {
   latitud: number | null;
   longitud: number | null;
 };
-type OfferHost = { nombre: string };
+type OfferHost = { nombre: string; handicap_manual: number | null };
 type OfferRow = {
   id: string;
   fecha: string | null;
@@ -46,7 +46,7 @@ function OfferCard({ offer }: { offer: OfferRow }) {
             : `${formatFecha(offer.fecha)} · ${formatHora(offer.hora)}`}
         </p>
         <p className="mt-2 text-sm text-swf-verde/60">
-          Anfitrión: {host?.nombre ?? "Socio SWF"}
+          Anfitrión: {nombreConHc(host?.nombre, host?.handicap_manual)}
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {offer.caddie_incluido ? <Badge>Caddie incluido</Badge> : null}
@@ -79,7 +79,7 @@ export default async function OfertasPage({
   const clubs = clubsData ?? [];
 
   const offerSelect =
-    "id, fecha, hora, fecha_flexible, pases_disponibles, pases_confirmados, caddie_incluido, carrito_compartido, clubs(nombre, ciudad, direccion, latitud, longitud), profiles!tee_time_offers_host_id_fkey(nombre)";
+    "id, fecha, hora, fecha_flexible, pases_disponibles, pases_confirmados, caddie_incluido, carrito_compartido, clubs(nombre, ciudad, direccion, latitud, longitud), profiles!tee_time_offers_host_id_fkey(nombre, handicap_manual)";
 
   let fixedQuery = supabase
     .from("tee_time_offers")
@@ -99,7 +99,12 @@ export default async function OfertasPage({
     .order("created_at", { ascending: false });
   if (club_id) flexQuery = flexQuery.eq("club_id", club_id);
 
-  const [{ data: offers }, { data: flexOffers }] = await Promise.all([fixedQuery, flexQuery]);
+  const [
+    { data: offers, error: offersError },
+    { data: flexOffers, error: flexError },
+  ] = await Promise.all([fixedQuery, flexQuery]);
+  if (offersError) console.error("[ofertas] Error cargando ofertas:", offersError);
+  if (flexError) console.error("[ofertas] Error cargando ofertas flexibles:", flexError);
 
   return (
     <div>
@@ -135,6 +140,16 @@ export default async function OfertasPage({
           </Link>
         )}
       </form>
+
+      {offersError || flexError ? (
+        <Card className="mb-6 border-red-300 bg-red-50">
+          <p className="text-sm text-red-800">
+            No pudimos cargar las ofertas ({offersError?.message ?? flexError?.message}). Si
+            esto sigue pasando, probablemente falte correr las migraciones más recientes en
+            Supabase.
+          </p>
+        </Card>
+      ) : null}
 
       {!offers?.length && !flexOffers?.length ? (
         <Card>

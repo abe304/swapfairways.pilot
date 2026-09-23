@@ -37,7 +37,8 @@ export async function updateProfile(_prevState: unknown, formData: FormData) {
     .eq("id", profile.id);
 
   if (error) {
-    return { error: "No pudimos guardar tu perfil. Intenta de nuevo." };
+    console.error("[updateProfile] Error guardando perfil:", error);
+    return { error: `No pudimos guardar tu perfil (${error.message}).` };
   }
 
   const { error: contactError } = await supabase
@@ -45,7 +46,8 @@ export async function updateProfile(_prevState: unknown, formData: FormData) {
     .upsert({ user_id: profile.id, telefono: telefono || null });
 
   if (contactError) {
-    return { error: "No pudimos guardar tu teléfono de contacto." };
+    console.error("[updateProfile] Error guardando teléfono:", contactError);
+    return { error: `No pudimos guardar tu teléfono de contacto (${contactError.message}).` };
   }
 
   revalidatePath("/perfil");

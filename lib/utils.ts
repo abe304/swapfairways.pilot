@@ -30,6 +30,11 @@ export function formatMoneda(monto: number | null) {
   }).format(monto);
 }
 
+export function nombreConHc(nombre: string | undefined | null, hc: number | null | undefined) {
+  if (!nombre) return "Socio";
+  return hc !== null && hc !== undefined ? `${nombre} (HC ${hc})` : nombre;
+}
+
 export function mapsUrl(
   direccion: string,
   coords?: { latitud: number | null; longitud: number | null } | null,

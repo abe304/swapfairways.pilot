@@ -20,6 +20,7 @@ export function ClubCombobox({
   required,
   name = "club_id",
   emptyOptionLabel,
+  onSelect,
 }: {
   clubs: Club[];
   defaultValue?: string | null;
@@ -27,6 +28,8 @@ export function ClubCombobox({
   name?: string;
   /** Si se da, agrega una primera opción para limpiar la selección (ej. "Todos los clubes"). */
   emptyOptionLabel?: string;
+  /** Se llama con el club completo cuando el usuario elige uno de la lista. */
+  onSelect?: (club: Club) => void;
 }) {
   const defaultClub = clubs.find((c) => c.id === defaultValue);
   const [query, setQuery] = useState(defaultClub ? labelFor(defaultClub) : "");
@@ -66,6 +69,7 @@ export function ClubCombobox({
     setSelectedId(c.id);
     setQuery(labelFor(c));
     setOpen(false);
+    onSelect?.(c);
   }
 
   function clearSelection() {

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { Card, Badge } from "@/components/ui/Card";
-import { formatFecha, formatHora } from "@/lib/utils";
+import { formatFecha, formatHora, nombreConHc } from "@/lib/utils";
 import { approveRequest, rejectRequest, markPlayed } from "./actions";
 import { ActionButton } from "./ActionButton";
 
@@ -18,7 +18,7 @@ type HostedOffer = {
     id: string;
     estado: string;
     guest_id: string;
-    profiles: { nombre: string } | null;
+    profiles: { nombre: string; handicap_manual: number | null } | null;
   }>;
 };
 
@@ -32,7 +32,7 @@ type GuestRequest = {
     fecha_flexible: boolean;
     host_id: string;
     clubs: { nombre: string } | null;
-    profiles: { nombre: string } | null;
+    profiles: { nombre: string; handicap_manual: number | null } | null;
   } | null;
 };
 
@@ -61,7 +61,7 @@ export default async function MisRondasPage({
   const { data: hostedOffersRaw } = await supabase
     .from("tee_time_offers")
     .select(
-      "id, fecha, hora, fecha_flexible, pases_disponibles, pases_confirmados, clubs(nombre), requests(id, estado, guest_id, profiles!requests_guest_id_fkey(nombre))",
+      "id, fecha, hora, fecha_flexible, pases_disponibles, pases_confirmados, clubs(nombre), requests(id, estado, guest_id, profiles!requests_guest_id_fkey(nombre, handicap_manual))",
     )
     .eq("host_id", profile.id)
     .order("fecha", { ascending: true });
@@ -70,7 +70,7 @@ export default async function MisRondasPage({
   const { data: myRequestsRaw } = await supabase
     .from("requests")
     .select(
-      "id, estado, offer_id, tee_time_offers(fecha, hora, fecha_flexible, host_id, clubs(nombre), profiles!tee_time_offers_host_id_fkey(nombre))",
+      "id, estado, offer_id, tee_time_offers(fecha, hora, fecha_flexible, host_id, clubs(nombre), profiles!tee_time_offers_host_id_fkey(nombre, handicap_manual))",
     )
     .eq("guest_id", profile.id)
     .order("created_at", { ascending: false });
@@ -170,7 +170,7 @@ export default async function MisRondasPage({
                               href={`/perfil/${req.guest_id}`}
                               className="text-sm font-medium text-swf-verde hover:underline"
                             >
-                              {req.profiles?.nombre ?? "Socio"}
+                              {nombreConHc(req.profiles?.nombre, req.profiles?.handicap_manual)}
                             </Link>{" "}
                             <Badge tone={ESTADO_TONE[req.estado]}>{req.estado}</Badge>
                           </div>
@@ -246,7 +246,10 @@ export default async function MisRondasPage({
                     </Link>
                     <p className="text-sm text-swf-verde/70">
                       {req.tee_time_offers ? offerFechaLabel(req.tee_time_offers) : ""} · Anfitrión:{" "}
-                      {req.tee_time_offers?.profiles?.nombre}
+                      {nombreConHc(
+                        req.tee_time_offers?.profiles?.nombre,
+                        req.tee_time_offers?.profiles?.handicap_manual,
+                      )}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
