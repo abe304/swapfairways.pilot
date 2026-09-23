@@ -50,6 +50,12 @@ export type ProfileContact = {
   updated_at: string;
 }
 
+export type ProfileClub = {
+  profile_id: string;
+  club_id: string;
+  created_at: string;
+}
+
 export type TeeTimeOffer = {
   id: string;
   host_id: string;
@@ -137,6 +143,27 @@ export interface Database {
             columns: ["user_id"];
             isOneToOne: true;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      profile_clubs: {
+        Row: ProfileClub;
+        Insert: Partial<ProfileClub> & { profile_id: string; club_id: string };
+        Update: Partial<ProfileClub>;
+        Relationships: [
+          {
+            foreignKeyName: "profile_clubs_profile_id_fkey";
+            columns: ["profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "profile_clubs_club_id_fkey";
+            columns: ["club_id"];
+            isOneToOne: false;
+            referencedRelation: "clubs";
             referencedColumns: ["id"];
           },
         ];

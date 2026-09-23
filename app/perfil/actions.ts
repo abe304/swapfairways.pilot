@@ -14,6 +14,7 @@ export async function updateProfile(_prevState: unknown, formData: FormData) {
   const bio = String(formData.get("bio") ?? "").trim();
   const ghinId = String(formData.get("ghin_id") ?? "").trim();
   const telefono = String(formData.get("telefono") ?? "").trim();
+  const otrosClubIds = formData.getAll("otros_club_ids").map(String).filter(Boolean);
 
   if (!nombre) {
     return { error: "El nombre es obligatorio." };
@@ -48,6 +49,32 @@ export async function updateProfile(_prevState: unknown, formData: FormData) {
   if (contactError) {
     console.error("[updateProfile] Error guardando teléfono:", contactError);
     return { error: `No pudimos guardar tu teléfono de contacto (${contactError.message}).` };
+  }
+
+  // Sincroniza la lista completa de clubes del socio (principal + otros):
+  // se borra lo anterior y se vuelve a insertar el set actual — más simple
+  // y seguro que calcular un diff.
+  const todosLosClubIds = Array.from(new Set([clubId, ...otrosClubIds].filter(Boolean)));
+
+  const { error: deleteClubsError } = await supabase
+    .from("profile_clubs")
+    .delete()
+    .eq("profile_id", profile.id);
+
+  if (deleteClubsError) {
+    console.error("[updateProfile] Error limpiando clubes del socio:", deleteClubsError);
+    return { error: `No pudimos guardar tus clubes (${deleteClubsError.message}).` };
+  }
+
+  if (todosLosClubIds.length > 0) {
+    const { error: insertClubsError } = await supabase
+      .from("profile_clubs")
+      .insert(todosLosClubIds.map((club_id) => ({ profile_id: profile.id, club_id })));
+
+    if (insertClubsError) {
+      console.error("[updateProfile] Error guardando clubes del socio:", insertClubsError);
+      return { error: `No pudimos guardar tus clubes (${insertClubsError.message}).` };
+    }
   }
 
   revalidatePath("/perfil");

@@ -19,6 +19,9 @@ const EMBED_CONFIG: Partial<Record<MockTable, Record<string, EmbedConfig>>> = {
   profiles: {
     clubs: { type: "forward", fkColumn: "club_id", target: "clubs" },
   },
+  profile_clubs: {
+    clubs: { type: "forward", fkColumn: "club_id", target: "clubs" },
+  },
   requests: {
     profiles: { type: "forward", fkColumn: "guest_id", target: "profiles" },
     tee_time_offers: { type: "forward", fkColumn: "offer_id", target: "tee_time_offers" },
@@ -100,7 +103,7 @@ export class MockQueryBuilder implements PromiseLike<MockResult<unknown>> {
   private filters: Filter[] = [];
   private orderCol: string | null = null;
   private orderAsc = true;
-  private mode: "select" | "insert" | "update" | "upsert" = "select";
+  private mode: "select" | "insert" | "update" | "upsert" | "delete" = "select";
   private payload: MockRow | MockRow[] | null = null;
   private wantSingle = false;
   private wantMaybeSingle = false;
@@ -160,6 +163,11 @@ export class MockQueryBuilder implements PromiseLike<MockResult<unknown>> {
   upsert(payload: MockRow) {
     this.mode = "upsert";
     this.payload = payload;
+    return this;
+  }
+
+  delete() {
+    this.mode = "delete";
     return this;
   }
 
@@ -249,6 +257,14 @@ export class MockQueryBuilder implements PromiseLike<MockResult<unknown>> {
       const row: MockRow = { updated_at: nowIso(), ...payload };
       table.push(row);
       return this.finish([row]);
+    }
+
+    if (this.mode === "delete") {
+      const removed = table.filter((r) => this.matches(r));
+      for (let i = table.length - 1; i >= 0; i--) {
+        if (this.matches(table[i])) table.splice(i, 1);
+      }
+      return this.finish(removed);
     }
 
     return { data: null, error: { message: `Modo no soportado: ${this.mode}` } };

@@ -6,6 +6,7 @@ export type MockTable =
   | "clubs"
   | "profiles"
   | "profile_contacts"
+  | "profile_clubs"
   | "tee_time_offers"
   | "requests"
   | "credit_transactions"
@@ -179,6 +180,13 @@ function buildInitialStore(): Store {
     profile_contacts: [
       { user_id: uCarlos, telefono: "+52 55 1111 0002", updated_at: nowIso() },
       { user_id: uTest, telefono: "+52 55 0000 0000", updated_at: nowIso() },
+    ],
+    // Ejemplo de socio con más de un club (punto de feedback del piloto):
+    // el usuario de prueba pertenece a su club principal y también a
+    // Guadalajara.
+    profile_clubs: [
+      { profile_id: uTest, club_id: clubBosques, created_at: nowIso() },
+      { profile_id: uTest, club_id: clubGuadalajara, created_at: nowIso() },
     ],
     tee_time_offers: [],
     requests: [],

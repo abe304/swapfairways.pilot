@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { ProfileForm } from "./ProfileForm";
 import { Card } from "@/components/ui/Card";
+import type { Club } from "@/lib/supabase/types";
 
 export default async function PerfilPage({
   searchParams,
@@ -17,6 +18,15 @@ export default async function PerfilPage({
     .select("telefono")
     .eq("user_id", profile.id)
     .maybeSingle();
+  const { data: profileClubsRaw } = await supabase
+    .from("profile_clubs")
+    .select("clubs(*)")
+    .eq("profile_id", profile.id);
+  const otrosClubesIniciales = (
+    (profileClubsRaw as unknown as { clubs: Club | null }[] | null) ?? []
+  )
+    .map((pc) => pc.clubs)
+    .filter((c): c is Club => c !== null && c.id !== profile.club_id);
 
   return (
     <div className="mx-auto max-w-lg">
@@ -29,7 +39,12 @@ export default async function PerfilPage({
         </Card>
       ) : null}
       <h1 className="mb-6 text-2xl font-semibold text-swf-verde">Tu perfil</h1>
-      <ProfileForm profile={profile} clubs={clubs ?? []} telefono={contact?.telefono ?? ""} />
+      <ProfileForm
+        profile={profile}
+        clubs={clubs ?? []}
+        telefono={contact?.telefono ?? ""}
+        otrosClubesIniciales={otrosClubesIniciales}
+      />
     </div>
   );
 }

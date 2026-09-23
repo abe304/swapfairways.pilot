@@ -3,6 +3,7 @@ import { requireProfile } from "@/lib/auth";
 import { OfferForm } from "./OfferForm";
 import { Card } from "@/components/ui/Card";
 import Link from "next/link";
+import type { Club } from "@/lib/supabase/types";
 
 export default async function NuevaOfertaPage() {
   const profile = await requireProfile();
@@ -14,6 +15,16 @@ export default async function NuevaOfertaPage() {
   if (clubsError) {
     console.error("[ofertas/nueva] Error cargando clubes:", clubsError);
   }
+
+  const { data: misClubesRaw } = await supabase
+    .from("profile_clubs")
+    .select("clubs(*)")
+    .eq("profile_id", profile.id);
+  const misClubes = (
+    (misClubesRaw as unknown as { clubs: Club | null }[] | null) ?? []
+  )
+    .map((pc) => pc.clubs)
+    .filter((c): c is Club => c !== null);
 
   return (
     <div className="mx-auto max-w-lg">
@@ -40,7 +51,7 @@ export default async function NuevaOfertaPage() {
           </p>
         </Card>
       ) : null}
-      <OfferForm clubs={clubs ?? []} defaultClubId={profile.club_id} />
+      <OfferForm clubs={clubs ?? []} defaultClubId={profile.club_id} misClubes={misClubes} />
     </div>
   );
 }

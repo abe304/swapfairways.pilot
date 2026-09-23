@@ -61,6 +61,7 @@ Deliberadamente no incluido (ver brief original para el detalle de por qué):
    - `0003_reglas_flexibles_ghin.sql` — GHIN, reglas/obligaciones por club, costo variable en créditos, ofertas con fecha flexible.
    - `0004_limpieza_duplicados.sql` — deduplica clubes (por si `0002` se corrió más de una vez) y agrega una restricción única sobre `clubs.nombre` para que no vuelva a pasar.
    - `0005_costos.sql` — costo de visita sugerido por club, y desglose de costo de caddie/carrito por oferta.
+   - `0006_multiples_clubes.sql` — un socio puede pertenecer a más de un club (tabla `profile_clubs`), con accesos rápidos al anfitrionar.
 
    Corre cada archivo **una sola vez y en orden** — si por error corres alguno dos veces, `0004` está pensado para poder correrse de nuevo sin problema y arreglarlo.
 3. Ve a **Project Settings > API** y copia la `Project URL`, la `anon public key` y la `service_role key`.

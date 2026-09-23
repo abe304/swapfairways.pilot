@@ -21,6 +21,7 @@ export function ClubCombobox({
   name = "club_id",
   emptyOptionLabel,
   onSelect,
+  presetClub,
 }: {
   clubs: Club[];
   defaultValue?: string | null;
@@ -30,6 +31,8 @@ export function ClubCombobox({
   emptyOptionLabel?: string;
   /** Se llama con el club completo cuando el usuario elige uno de la lista. */
   onSelect?: (club: Club) => void;
+  /** Selecciona este club desde afuera (ej. un botón de acceso rápido). Pasa un objeto nuevo cada vez, incluso para el mismo club, para que se vuelva a aplicar. */
+  presetClub?: Club | null;
 }) {
   const defaultClub = clubs.find((c) => c.id === defaultValue);
   const [query, setQuery] = useState(defaultClub ? labelFor(defaultClub) : "");
@@ -64,6 +67,19 @@ export function ClubCombobox({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    // presetClub es un comando imperativo desde afuera (ej. un botón de
+    // "mis clubes"), no un valor derivado de props — cada click pasa un
+    // objeto nuevo a propósito para que este efecto se vuelva a disparar.
+    if (presetClub) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSelectedId(presetClub.id);
+      setQuery(labelFor(presetClub));
+      onSelect?.(presetClub);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [presetClub]);
 
   function selectClub(c: Club) {
     setSelectedId(c.id);

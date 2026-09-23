@@ -12,9 +12,11 @@ import type { Club } from "@/lib/supabase/types";
 export function OfferForm({
   clubs,
   defaultClubId,
+  misClubes,
 }: {
   clubs: Club[];
   defaultClubId: string | null;
+  misClubes: Club[];
 }) {
   const [state, action, pending] = useActionState(createOffer, undefined);
   const [flexible, setFlexible] = useState(false);
@@ -24,7 +26,14 @@ export function OfferForm({
   const [caddieIncluido, setCaddieIncluido] = useState(false);
   const [carritoCompartido, setCarritoCompartido] = useState(false);
   const [costoEstimado, setCostoEstimado] = useState("");
+  const [presetClub, setPresetClub] = useState<Club | null>(null);
   const today = new Date().toISOString().slice(0, 10);
+
+  function handleClubSelect(club: Club) {
+    if (club.costo_visita_sugerido != null) {
+      setCostoEstimado(String(club.costo_visita_sugerido));
+    }
+  }
 
   function addFecha() {
     if (fechaInput && horaInput) {
@@ -42,15 +51,26 @@ export function OfferForm({
     <Card>
       <form action={action} className="space-y-4">
         <FormField label="Club" htmlFor="club_id">
+          {misClubes.length > 0 ? (
+            <div className="mb-2 flex flex-wrap gap-2">
+              {misClubes.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setPresetClub({ ...c })}
+                  className="rounded-full border border-swf-verde/20 px-3 py-1 text-xs text-swf-verde hover:bg-swf-verde/5"
+                >
+                  {c.nombre}
+                </button>
+              ))}
+            </div>
+          ) : null}
           <ClubCombobox
             clubs={clubs}
             defaultValue={defaultClubId}
             required
-            onSelect={(club) => {
-              if (club.costo_visita_sugerido != null) {
-                setCostoEstimado(String(club.costo_visita_sugerido));
-              }
-            }}
+            onSelect={handleClubSelect}
+            presetClub={presetClub}
           />
         </FormField>
 
