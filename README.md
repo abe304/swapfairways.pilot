@@ -62,6 +62,7 @@ Deliberadamente no incluido (ver brief original para el detalle de por qué):
    - `0004_limpieza_duplicados.sql` — deduplica clubes (por si `0002` se corrió más de una vez) y agrega una restricción única sobre `clubs.nombre` para que no vuelva a pasar.
    - `0005_costos.sql` — costo de visita sugerido por club, y desglose de costo de caddie/carrito por oferta.
    - `0006_multiples_clubes.sql` — un socio puede pertenecer a más de un club (tabla `profile_clubs`), con accesos rápidos al anfitrionar.
+   - `0007_directorio_gogolf.sql` — reemplaza el catálogo de la Federación por un directorio más amplio de gogolf.mx (~194 clubes nuevos). Segura de correr aunque ya tengas datos: no borra clubes en uso, y no duplica los que ya existan por nombre.
 
    Corre cada archivo **una sola vez y en orden** — si por error corres alguno dos veces, `0004` está pensado para poder correrse de nuevo sin problema y arreglarlo.
 3. Ve a **Project Settings > API** y copia la `Project URL`, la `anon public key` y la `service_role key`.
@@ -132,10 +133,12 @@ Ver [`supabase/migrations/`](supabase/migrations/) — es la fuente de verdad. R
 
 ## Catálogo de clubes
 
-[`supabase/migrations/0002_clubs_mexico.sql`](supabase/migrations/0002_clubs_mexico.sql) carga 166 campos de golf de México (fuente en [`lib/data/clubs-mexico.ts`](lib/data/clubs-mexico.ts), usada también por el modo demo y el seed):
+La fuente de verdad es [`lib/data/clubs-mexico.ts`](lib/data/clubs-mexico.ts) (usada por las migraciones `0002`/`0007`, el modo demo y el seed) — ~254 campos de golf de México:
 
-- **gogolf.mx** (36): plataforma de reserva pay-and-play — dirección postal exacta.
-- **Federación Mexicana de Golf** (107): mapa oficial "Campos de Golf Federados en México" — coordenadas exactas (usadas directo para el link de Maps), pero sin dirección postal ni ciudad, y el estado se estimó por cercanía cuando el KML no lo daba (puede haber algún error puntual cerca de límites estatales).
-- **Compilación manual** (~23): clubes privados conocidos no cubiertos por las dos fuentes anteriores — dirección aproximada (nombre + ciudad + estado), no verificada.
+- **gogolf.mx, fichas reservables** (36): dirección postal exacta.
+- **gogolf.mx, directorio del mapa** (~194): coordenadas exactas (usadas directo para el link de Maps) pero sin dirección postal ni ciudad — el estado se estimó por cercanía cuando hacía falta, y el tipo (privado/público) se infirió por palabras clave en el nombre. Puede haber algún error puntual, corregible en Supabase Studio.
+- **Compilación manual** (~23): clubes privados conocidos no cubiertos por las fuentes anteriores — dirección aproximada (nombre + ciudad + estado), no verificada.
+
+(El catálogo incluyó antes ~107 clubes de la Federación Mexicana de Golf — se reemplazaron por el directorio de gogolf.mx en `0007_directorio_gogolf.sql`, que es más amplio.)
 
 Cada club tiene `tipo` ('privado' o 'publico') — la mayoría de los socios de SWF pertenecen a clubes privados, así que verifica que el club real de tu grupo piloto esté cargado correctamente (o corrígelo) en Supabase Studio antes de invitar gente.
