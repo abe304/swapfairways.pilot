@@ -15,12 +15,13 @@ function hoyEnMexico() {
   return new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
+const MAX_PASES = 3;
+
 export async function createOffer(_prevState: unknown, formData: FormData) {
   const profile = await requireProfile();
 
   const club_id = String(formData.get("club_id") ?? "");
   const flexible = formData.get("fecha_flexible") === "on";
-  const pases_disponibles = Number(formData.get("pases_disponibles") ?? 1);
   const caddie_compartido = formData.get("caddie_compartido") === "on";
   const carrito_compartido = formData.get("carrito_compartido") === "on";
   const nota = String(formData.get("nota") ?? "").trim();
@@ -28,28 +29,38 @@ export async function createOffer(_prevState: unknown, formData: FormData) {
   if (!club_id) {
     return { error: "Selecciona un club de la lista." };
   }
-  if (!pases_disponibles || pases_disponibles < 1) {
-    return { error: "Debes ofrecer al menos 1 pase." };
-  }
   if (!profile.club_id) {
     return {
       error: "Completa tu club en tu perfil antes de publicar una oferta.",
     };
   }
 
-  // Con disponibilidad flexible no se pide ninguna fecha. Con fecha fija se
-  // acepta la lista de pares fecha+hora ya agregados, más el par que haya
-  // quedado capturado en los campos sin presionar "+ Agregar".
-  const pares: Array<{ fecha: string; hora: string }> = [];
-  if (!flexible) {
+  // Con disponibilidad flexible no se pide ninguna fecha y los pases son los
+  // de esa única oferta. Con fecha fija cada fecha trae sus propios pases
+  // ("fecha|hora|pases"), más el par que haya quedado capturado en los campos
+  // sin presionar "+ Agregar".
+  const pasesValidos = (n: number) => Number.isInteger(n) && n >= 1 && n <= MAX_PASES;
+  const errorPases = `Los pases deben ser un número entre 1 y ${MAX_PASES}.`;
+
+  const pares: Array<{ fecha: string; hora: string; pases: number }> = [];
+  let pasesFlexible = 1;
+  if (flexible) {
+    pasesFlexible = Number(formData.get("pases_disponibles") ?? 1);
+    if (!pasesValidos(pasesFlexible)) return { error: errorPases };
+  } else {
     for (const pair of formData.getAll("fecha_hora_pairs").map(String)) {
-      const [fecha, hora] = pair.split("|");
-      if (fecha && hora) pares.push({ fecha, hora });
+      const [fecha, hora, pasesRaw] = pair.split("|");
+      if (!fecha || !hora) continue;
+      const pases = Number(pasesRaw ?? 1);
+      if (!pasesValidos(pases)) return { error: errorPases };
+      pares.push({ fecha, hora, pases });
     }
     const fechaPendiente = String(formData.get("fecha_pendiente") ?? "").trim();
     const horaPendiente = String(formData.get("hora_pendiente") ?? "").trim();
     if (fechaPendiente && horaPendiente) {
-      pares.push({ fecha: fechaPendiente, hora: horaPendiente });
+      const pases = Number(formData.get("pases_pendiente") ?? 1);
+      if (!pasesValidos(pases)) return { error: errorPases };
+      pares.push({ fecha: fechaPendiente, hora: horaPendiente, pases });
     } else if (fechaPendiente) {
       return { error: "Falta la hora de la fecha que elegiste." };
     } else if (horaPendiente && pares.length === 0) {
@@ -75,7 +86,6 @@ export async function createOffer(_prevState: unknown, formData: FormData) {
   const base = {
     host_id: profile.id,
     club_id,
-    pases_disponibles,
     caddie_compartido,
     carrito_compartido,
     ...costos,
@@ -92,8 +102,14 @@ export async function createOffer(_prevState: unknown, formData: FormData) {
   // (cada fecha puede tener su propia hora; se descartan pares repetidos).
   const unicos = Array.from(new Map(pares.map((p) => [`${p.fecha}|${p.hora}`, p])).values());
   const rows = flexible
-    ? [{ ...base, fecha_flexible: true }]
-    : unicos.map(({ fecha, hora }) => ({ ...base, fecha, hora, fecha_flexible: false }));
+    ? [{ ...base, pases_disponibles: pasesFlexible, fecha_flexible: true }]
+    : unicos.map(({ fecha, hora, pases }) => ({
+        ...base,
+        fecha,
+        hora,
+        pases_disponibles: pases,
+        fecha_flexible: false,
+      }));
 
   const { data, error } = await insertOffers(supabase, rows);
 

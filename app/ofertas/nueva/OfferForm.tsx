@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { createOffer } from "../actions";
 import { Button } from "@/components/ui/Button";
-import { FormField, Input, Textarea } from "@/components/ui/Field";
+import { FormField, Input, Select, Textarea } from "@/components/ui/Field";
 import { Card } from "@/components/ui/Card";
 import { ClubCombobox } from "@/components/ClubCombobox";
 import { formatFecha, formatHora, formatMoneda } from "@/lib/utils";
@@ -21,9 +21,10 @@ export function OfferForm({
 }) {
   const [state, action, pending] = useActionState(createOffer, undefined);
   const [flexible, setFlexible] = useState(false);
-  const [fechas, setFechas] = useState<Array<{ fecha: string; hora: string }>>([]);
+  const [fechas, setFechas] = useState<Array<{ fecha: string; hora: string; pases: number }>>([]);
   const [fechaInput, setFechaInput] = useState("");
   const [horaInput, setHoraInput] = useState("");
+  const [pasesInput, setPasesInput] = useState(1);
   const [costos, setCostos] = useState<Partial<Record<CostoKey, string>>>({});
   const [presetClub, setPresetClub] = useState<Club | null>(null);
   // Se guarda como texto para poder vaciar el campo mientras se escribe; se
@@ -40,9 +41,11 @@ export function OfferForm({
     ) as Costos,
     compartidos,
   );
-  // Cada fecha se publica como una ronda aparte con sus propios pases; cuenta
+  // Cada fecha se publica como una ronda aparte con sus propios pases. Cuenta
   // también la fecha+hora escrita que aún no se agregó con "+ Agregar".
-  const numFechas = flexible ? 1 : fechas.length + (fechaInput && horaInput ? 1 : 0);
+  const hayPendiente = !!(fechaInput && horaInput);
+  const numFechas = fechas.length + (hayPendiente ? 1 : 0);
+  const totalPases = fechas.reduce((n, f) => n + f.pases, 0) + (hayPendiente ? pasesInput : 0);
 
   function handleClubSelect(club: Club) {
     // El costo sugerido del club es el green fee: solo prellena si el
@@ -57,12 +60,13 @@ export function OfferForm({
   function addFecha() {
     if (fechaInput && horaInput) {
       setFechas(
-        [...fechas, { fecha: fechaInput, hora: horaInput }].sort(
+        [...fechas, { fecha: fechaInput, hora: horaInput, pases: pasesInput }].sort(
           (a, b) => a.fecha.localeCompare(b.fecha) || a.hora.localeCompare(b.hora),
         ),
       );
       setFechaInput("");
       setHoraInput("");
+      setPasesInput(1);
     }
   }
 
@@ -124,6 +128,19 @@ export function OfferForm({
                 className="flex-1"
                 aria-label="Hora para esta fecha"
               />
+              <Select
+                name="pases_pendiente"
+                value={pasesInput}
+                onChange={(e) => setPasesInput(Number(e.target.value))}
+                className="w-auto"
+                aria-label="Pases para esta fecha"
+              >
+                {[1, 2, 3].map((n) => (
+                  <option key={n} value={n}>
+                    {n} {n === 1 ? "pase" : "pases"}
+                  </option>
+                ))}
+              </Select>
               <Button type="button" variant="secondary" onClick={addFecha}>
                 + Agregar
               </Button>
@@ -135,8 +152,24 @@ export function OfferForm({
                     key={`${fh.fecha}-${fh.hora}-${i}`}
                     className="flex items-center gap-1 rounded-full bg-swf-verde/10 px-3 py-1 text-xs text-swf-verde"
                   >
-                    {formatFecha(fh.fecha)} · {formatHora(fh.hora)}
-                    <input type="hidden" name="fecha_hora_pairs" value={`${fh.fecha}|${fh.hora}`} />
+                    {formatFecha(fh.fecha)} · {formatHora(fh.hora)} ·
+                    <select
+                      value={fh.pases}
+                      onChange={(e) =>
+                        setFechas(
+                          fechas.map((f, idx) => (idx === i ? { ...f, pases: Number(e.target.value) } : f)),
+                        )
+                      }
+                      className="rounded bg-white/70 px-1 py-0.5 text-xs"
+                      aria-label={`Pases para ${fh.fecha} ${fh.hora}`}
+                    >
+                      {[1, 2, 3].map((n) => (
+                        <option key={n} value={n}>
+                          {n} {n === 1 ? "pase" : "pases"}
+                        </option>
+                      ))}
+                    </select>
+                    <input type="hidden" name="fecha_hora_pairs" value={`${fh.fecha}|${fh.hora}|${fh.pases}`} />
                     <button
                       type="button"
                       onClick={() => setFechas(fechas.filter((_, idx) => idx !== i))}
@@ -150,37 +183,34 @@ export function OfferForm({
               </div>
             ) : (
               <p className="mt-1 text-xs text-swf-verde/50">
-                Elige fecha y hora y presiona &quot;+ Agregar&quot; para sumar más de una (pueden tener horas distintas). Si solo es una, basta con llenarla y publicar.
+                Elige fecha, hora y cuántos pases ofreces ese día, y presiona &quot;+ Agregar&quot; para sumar más fechas (cada una con su hora y sus pases). Si solo es una, basta con llenarla y publicar.
               </p>
             )}
           </FormField>
         ) : null}
 
-        <FormField
-          label={!flexible && numFechas > 1 ? "Pases disponibles por cada fecha" : "Pases disponibles"}
-          htmlFor="pases_disponibles"
-        >
-          <Input
-            id="pases_disponibles"
-            name="pases_disponibles"
-            type="number"
-            min={1}
-            max={3}
-            value={pasesTexto}
-            onChange={(e) => setPasesTexto(e.target.value)}
-            onBlur={() => setPasesTexto(String(pases))}
-            required
-          />
-          {!flexible && numFechas > 1 ? (
-            <p className="mt-1 text-xs text-swf-verde/70">
-              Se publicarán {numFechas} rondas, una por fecha, cada una con {pases}{" "}
-              {pases === 1 ? "pase" : "pases"} ({numFechas} × {pases} = {numFechas * pases} en total).
-              Cada fecha se llena por separado.
-            </p>
-          ) : (
-            <p className="mt-1 text-xs text-swf-verde/50">Máximo 3 por ronda.</p>
-          )}
-        </FormField>
+        {flexible ? (
+          <FormField label="Pases disponibles" htmlFor="pases_disponibles">
+            <Input
+              id="pases_disponibles"
+              name="pases_disponibles"
+              type="number"
+              min={1}
+              max={3}
+              value={pasesTexto}
+              onChange={(e) => setPasesTexto(e.target.value)}
+              onBlur={() => setPasesTexto(String(pases))}
+              required
+            />
+            <p className="mt-1 text-xs text-swf-verde/50">Máximo 3.</p>
+          </FormField>
+        ) : numFechas > 0 ? (
+          <p className="rounded-md bg-swf-verde/5 px-3 py-2 text-xs text-swf-verde/80">
+            Se publicarán {numFechas} {numFechas === 1 ? "ronda" : "rondas"} ({totalPases}{" "}
+            {totalPases === 1 ? "pase" : "pases"} en total). Los pases se cuentan por fecha: cada
+            fecha se llena por separado.
+          </p>
+        ) : null}
 
         <fieldset className="rounded-md border border-swf-verde/15 p-3">
           <legend className="px-1 text-sm font-medium text-swf-verde">
