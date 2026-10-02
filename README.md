@@ -64,6 +64,7 @@ Deliberadamente no incluido (ver brief original para el detalle de por qué):
    - `0006_multiples_clubes.sql` — un socio puede pertenecer a más de un club (tabla `profile_clubs`), con accesos rápidos al anfitrionar.
    - `0007_directorio_gogolf.sql` — reemplaza el catálogo de la Federación por un directorio más amplio de gogolf.mx (~194 clubes nuevos). Segura de correr aunque ya tengas datos: no borra clubes en uso, y no duplica los que ya existan por nombre. **Requiere haber corrido `0006` antes** (usa la tabla `profile_clubs`).
    - `0008_costos_estructurados.sql` — desglose de costos por oferta (green fee, desayuno, snacks, bebidas, renta de equipo, consumo mínimo, propina recomendada, otros cargos) y alta de El Cielo Country Club (Tlajomulco, Jalisco).
+   - `0009_fusionar_duplicados_viejos.sql` — fusiona 5 clubes del catálogo anterior que `0007` conservó por estar en uso (p. ej. "Coral Golf Resort" → "Coral Clubes Golf") con su equivalente del directorio nuevo, moviendo perfiles, accesos rápidos y ofertas.
 
    Corre cada archivo **una sola vez y en orden** — si por error corres alguno dos veces, `0004` está pensado para poder correrse de nuevo sin problema y arreglarlo.
 3. Ve a **Project Settings > API** y copia la `Project URL`, la `anon public key` y la `service_role key`.
