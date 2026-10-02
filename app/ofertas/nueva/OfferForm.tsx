@@ -26,7 +26,10 @@ export function OfferForm({
   const [horaInput, setHoraInput] = useState("");
   const [costos, setCostos] = useState<Partial<Record<CostoKey, string>>>({});
   const [presetClub, setPresetClub] = useState<Club | null>(null);
-  const [pases, setPases] = useState(1);
+  // Se guarda como texto para poder vaciar el campo mientras se escribe; se
+  // ajusta a 1–3 al salir del campo.
+  const [pasesTexto, setPasesTexto] = useState("1");
+  const pases = Math.min(3, Math.max(1, Number(pasesTexto) || 1));
   const [carritoCompartido, setCarritoCompartido] = useState(true);
   const [caddieCompartido, setCaddieCompartido] = useState(false);
   const today = new Date().toISOString().slice(0, 10);
@@ -163,8 +166,9 @@ export function OfferForm({
             type="number"
             min={1}
             max={3}
-            value={pases}
-            onChange={(e) => setPases(Number(e.target.value) || 1)}
+            value={pasesTexto}
+            onChange={(e) => setPasesTexto(e.target.value)}
+            onBlur={() => setPasesTexto(String(pases))}
             required
           />
           {!flexible && numFechas > 1 ? (
