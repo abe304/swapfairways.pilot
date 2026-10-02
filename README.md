@@ -65,6 +65,7 @@ Deliberadamente no incluido (ver brief original para el detalle de por qué):
    - `0007_directorio_gogolf.sql` — reemplaza el catálogo de la Federación por un directorio más amplio de gogolf.mx (~194 clubes nuevos). Segura de correr aunque ya tengas datos: no borra clubes en uso, y no duplica los que ya existan por nombre. **Requiere haber corrido `0006` antes** (usa la tabla `profile_clubs`).
    - `0008_costos_estructurados.sql` — desglose de costos por oferta (green fee, desayuno, snacks, bebidas, renta de equipo, consumo mínimo, propina recomendada, otros cargos) y alta de El Cielo Country Club (Tlajomulco, Jalisco).
    - `0009_fusionar_duplicados_viejos.sql` — fusiona 5 clubes del catálogo anterior que `0007` conservó por estar en uso (p. ej. "Coral Golf Resort" → "Coral Clubes Golf") con su equivalente del directorio nuevo, moviendo perfiles, accesos rápidos y ofertas.
+   - `0010_caddie_compartido.sql` — renombra `caddie_incluido` a `caddie_compartido` (el caddie se comparte y su costo se divide entre 2, igual que el carrito).
 
    Corre cada archivo **una sola vez y en orden** — si por error corres alguno dos veces, `0004` está pensado para poder correrse de nuevo sin problema y arreglarlo.
 3. Ve a **Project Settings > API** y copia la `Project URL`, la `anon public key` y la `service_role key`.

@@ -21,7 +21,7 @@ type OfferRow = {
   fecha_flexible: boolean;
   pases_disponibles: number;
   pases_confirmados: number;
-  caddie_incluido: boolean;
+  caddie_compartido: boolean;
   carrito_compartido: boolean;
   costo_estimado: number | null;
   clubs: OfferClub | null;
@@ -51,7 +51,7 @@ function OfferCard({ offer }: { offer: OfferRow }) {
           Anfitrión: {nombreConHc(host?.nombre, host?.handicap_manual)}
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
-          {offer.caddie_incluido ? <Badge>Caddie incluido</Badge> : null}
+          {offer.caddie_compartido ? <Badge>Caddie compartido</Badge> : null}
           {offer.carrito_compartido ? <Badge>Carrito compartido</Badge> : null}
           {offer.costo_estimado ? (
             <Badge tone="gold">Aprox. {formatMoneda(offer.costo_estimado)}</Badge>

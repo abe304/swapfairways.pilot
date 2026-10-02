@@ -7,7 +7,7 @@ import { LinkButton } from "@/components/ui/Button";
 import { formatFecha, formatHora, formatMoneda, mapsUrl } from "@/lib/utils";
 import { RequestButton } from "./RequestButton";
 import { OFFER_DETAIL_SELECT } from "@/lib/queries";
-import { COSTO_CONCEPTOS, totalCostos, type Costos } from "@/lib/offers";
+import { COSTO_CONCEPTOS, parteInvitado, totalCostos, type Costos, type CostoKey } from "@/lib/offers";
 
 const ESTADO_LABEL: Record<string, string> = {
   pendiente: "Solicitud enviada — esperando al anfitrión",
@@ -61,18 +61,23 @@ export default async function OfertaDetallePage({
     }
   ).profiles;
 
+  const compartidos = { carrito: offer.carrito_compartido, caddie: offer.caddie_compartido };
   const desglose = [
-    ...COSTO_CONCEPTOS.map((c) => ({
-      label: c.label,
-      monto: (offer as unknown as Record<string, number | null>)[c.key],
-      nota: "",
-    })),
+    ...COSTO_CONCEPTOS.map((c) => {
+      const completo = (offer as unknown as Record<string, number | null>)[c.key];
+      const parte = parteInvitado(c.key, completo, compartidos);
+      return {
+        label: c.label,
+        monto: parte,
+        nota: completo && parte !== completo ? `mitad de ${formatMoneda(completo)}, compartido` : "",
+      };
+    }),
     {
       label: "Otros cargos",
-      monto: offer.costo_otros,
+      monto: parteInvitado("costo_otros" as CostoKey, offer.costo_otros),
       nota: offer.concepto_otros ?? "",
     },
-  ].filter((d): d is { label: string; monto: number; nota: string } => !!d.monto && d.monto > 0);
+  ].filter((d) => d.monto > 0);
 
   const isHost = offer.host_id === profile.id;
   const cuposLibres = offer.pases_disponibles - offer.pases_confirmados;
@@ -135,9 +140,9 @@ export default async function OfertaDetallePage({
         </p>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          {offer.caddie_incluido ? (
+          {offer.caddie_compartido ? (
             <Badge>
-              Caddie incluido
+              Caddie compartido
             </Badge>
           ) : null}
           {offer.carrito_compartido ? (
@@ -235,7 +240,7 @@ export default async function OfertaDetallePage({
                   </ul>
                 ) : null}
                 <p className="mt-1 font-medium">
-                  Total aproximado: {formatMoneda(offer.costo_estimado ?? totalCostos(offer as Costos))}
+                  Total aproximado: {formatMoneda(offer.costo_estimado ?? totalCostos(offer as Costos, compartidos))}
                 </p>
               </div>
             ) : null}

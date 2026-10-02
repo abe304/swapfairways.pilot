@@ -65,7 +65,7 @@ export type TeeTimeOffer = {
   fecha_flexible: boolean;
   pases_disponibles: number;
   pases_confirmados: number;
-  caddie_incluido: boolean;
+  caddie_compartido: boolean;
   carrito_compartido: boolean;
   costo_estimado: number | null;
   costo_caddie: number | null;

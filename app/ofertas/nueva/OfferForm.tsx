@@ -7,7 +7,7 @@ import { FormField, Input, Textarea } from "@/components/ui/Field";
 import { Card } from "@/components/ui/Card";
 import { ClubCombobox } from "@/components/ClubCombobox";
 import { formatFecha, formatHora, formatMoneda } from "@/lib/utils";
-import { COSTO_CONCEPTOS, totalCostos, type Costos, type CostoKey } from "@/lib/offers";
+import { COSTO_CONCEPTOS, parteInvitado, totalCostos, type Costos, type CostoKey } from "@/lib/offers";
 import type { Club } from "@/lib/supabase/types";
 
 export function OfferForm({
@@ -26,12 +26,20 @@ export function OfferForm({
   const [horaInput, setHoraInput] = useState("");
   const [costos, setCostos] = useState<Partial<Record<CostoKey, string>>>({});
   const [presetClub, setPresetClub] = useState<Club | null>(null);
+  const [pases, setPases] = useState(1);
+  const [carritoCompartido, setCarritoCompartido] = useState(true);
+  const [caddieCompartido, setCaddieCompartido] = useState(false);
   const today = new Date().toISOString().slice(0, 10);
+  const compartidos = { carrito: carritoCompartido, caddie: caddieCompartido };
   const totalEstimado = totalCostos(
     Object.fromEntries(
       Object.entries(costos).map(([k, v]) => [k, v ? Number(v) || 0 : 0]),
     ) as Costos,
+    compartidos,
   );
+  // Cada fecha se publica como una ronda aparte con sus propios pases; cuenta
+  // también la fecha+hora escrita que aún no se agregó con "+ Agregar".
+  const numFechas = flexible ? 1 : fechas.length + (fechaInput && horaInput ? 1 : 0);
 
   function handleClubSelect(club: Club) {
     // El costo sugerido del club es el green fee: solo prellena si el
@@ -145,28 +153,30 @@ export function OfferForm({
           </FormField>
         ) : null}
 
-        <FormField label="Pases disponibles" htmlFor="pases_disponibles">
+        <FormField
+          label={!flexible && numFechas > 1 ? "Pases disponibles por cada fecha" : "Pases disponibles"}
+          htmlFor="pases_disponibles"
+        >
           <Input
             id="pases_disponibles"
             name="pases_disponibles"
             type="number"
             min={1}
             max={3}
-            defaultValue={1}
+            value={pases}
+            onChange={(e) => setPases(Number(e.target.value) || 1)}
             required
           />
+          {!flexible && numFechas > 1 ? (
+            <p className="mt-1 text-xs text-swf-verde/70">
+              Se publicarán {numFechas} rondas, una por fecha, cada una con {pases}{" "}
+              {pases === 1 ? "pase" : "pases"} ({numFechas} × {pases} = {numFechas * pases} en total).
+              Cada fecha se llena por separado.
+            </p>
+          ) : (
+            <p className="mt-1 text-xs text-swf-verde/50">Máximo 3 por ronda.</p>
+          )}
         </FormField>
-
-        <div className="flex flex-wrap gap-6">
-          <label className="flex items-center gap-2 text-sm text-swf-verde">
-            <input type="checkbox" name="caddie_incluido" className="h-4 w-4" />
-            Caddie incluido
-          </label>
-          <label className="flex items-center gap-2 text-sm text-swf-verde">
-            <input type="checkbox" name="carrito_compartido" className="h-4 w-4" />
-            Carrito compartido
-          </label>
-        </div>
 
         <fieldset className="rounded-md border border-swf-verde/15 p-3">
           <legend className="px-1 text-sm font-medium text-swf-verde">
@@ -177,25 +187,56 @@ export function OfferForm({
             no a través de SWF.
           </p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {COSTO_CONCEPTOS.map((c) => (
-              <div key={c.key}>
-                <label htmlFor={c.key} className="mb-1 block text-xs font-medium text-swf-verde">
-                  {c.label}
-                </label>
-                <Input
-                  id={c.key}
-                  name={c.key}
-                  type="number"
-                  min={0}
-                  step="1"
-                  inputMode="numeric"
-                  placeholder="0"
-                  value={costos[c.key] ?? ""}
-                  onChange={(e) => setCostos((prev) => ({ ...prev, [c.key]: e.target.value }))}
-                />
-                {c.hint ? <p className="mt-0.5 text-[11px] text-swf-verde/50">{c.hint}</p> : null}
-              </div>
-            ))}
+            {COSTO_CONCEPTOS.map((c) => {
+              const compartible = c.key === "costo_carrito" || c.key === "costo_caddie";
+              const compartido = c.key === "costo_carrito" ? carritoCompartido : caddieCompartido;
+              const monto = Number(costos[c.key]) || 0;
+              return (
+                <div key={c.key}>
+                  <label htmlFor={c.key} className="mb-1 block text-xs font-medium text-swf-verde">
+                    {c.label}
+                  </label>
+                  <Input
+                    id={c.key}
+                    name={c.key}
+                    type="number"
+                    min={0}
+                    step="1"
+                    inputMode="numeric"
+                    placeholder="0"
+                    value={costos[c.key] ?? ""}
+                    onChange={(e) => setCostos((prev) => ({ ...prev, [c.key]: e.target.value }))}
+                  />
+                  {compartible ? (
+                    <>
+                      <label className="mt-1 flex items-center gap-2 text-xs text-swf-verde">
+                        <input
+                          type="checkbox"
+                          name={c.key === "costo_carrito" ? "carrito_compartido" : "caddie_compartido"}
+                          className="h-4 w-4"
+                          checked={compartido}
+                          onChange={(e) =>
+                            c.key === "costo_carrito"
+                              ? setCarritoCompartido(e.target.checked)
+                              : setCaddieCompartido(e.target.checked)
+                          }
+                        />
+                        {c.key === "costo_carrito" ? "Carrito compartido" : "Caddie compartido"}
+                      </label>
+                      <p className="mt-0.5 text-[11px] text-swf-verde/50">
+                        {compartido
+                          ? monto > 0
+                            ? `Captura el costo completo; el invitado paga la mitad: ${formatMoneda(parteInvitado(c.key, monto, compartidos))}`
+                            : "Captura el costo completo; el invitado paga la mitad."
+                          : "El invitado paga el monto completo."}
+                      </p>
+                    </>
+                  ) : c.hint ? (
+                    <p className="mt-0.5 text-[11px] text-swf-verde/50">{c.hint}</p>
+                  ) : null}
+                </div>
+              );
+            })}
           </div>
           <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
@@ -226,7 +267,7 @@ export function OfferForm({
             </div>
           </div>
           <p className="mt-3 text-sm font-medium text-swf-verde">
-            Total aproximado: {formatMoneda(totalEstimado) === "Sin costo estimado" ? "$0" : formatMoneda(totalEstimado)}
+            Total que paga el invitado: {formatMoneda(totalEstimado) === "Sin costo estimado" ? "$0" : formatMoneda(totalEstimado)}
           </p>
         </fieldset>
 

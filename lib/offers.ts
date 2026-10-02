@@ -6,7 +6,7 @@ import type { Database } from "@/lib/supabase/types";
 // simulación automática hablen de lo mismo.
 export const COSTO_CONCEPTOS = [
   { key: "costo_green_fee", label: "Green fee", hint: "Si el club no da pase gratuito a invitados" },
-  { key: "costo_carrito", label: "Carrito (por pareja)", hint: "" },
+  { key: "costo_carrito", label: "Carrito", hint: "" },
   { key: "costo_caddie", label: "Caddie", hint: "" },
   { key: "costo_desayuno", label: "Desayuno", hint: "" },
   { key: "costo_snacks", label: "Snacks", hint: "" },
@@ -24,8 +24,19 @@ export type Costos = Partial<Record<CostoKey, number | null>> & {
 
 const TODAS_LAS_CLAVES: CostoKey[] = [...COSTO_CONCEPTOS.map((c) => c.key), "costo_otros"];
 
-export function totalCostos(costos: Costos): number {
-  return TODAS_LAS_CLAVES.reduce((sum, key) => sum + (costos[key] ?? 0), 0);
+// Carrito y caddie pueden ser compartidos entre el anfitrión y el invitado.
+// Se captura el costo completo y el invitado paga la mitad.
+export type Compartidos = { carrito?: boolean; caddie?: boolean };
+
+export function parteInvitado(key: CostoKey, monto: number | null | undefined, c: Compartidos = {}): number {
+  const m = monto ?? 0;
+  const dividido = (key === "costo_carrito" && c.carrito) || (key === "costo_caddie" && c.caddie);
+  return dividido ? m / 2 : m;
+}
+
+// Total que paga el invitado (con carrito/caddie compartidos ya divididos).
+export function totalCostos(costos: Costos, compartidos: Compartidos = {}): number {
+  return TODAS_LAS_CLAVES.reduce((sum, key) => sum + parteInvitado(key, costos[key], compartidos), 0);
 }
 
 // Lee los campos de costo de un FormData. Un campo vacío = no aplica (null);

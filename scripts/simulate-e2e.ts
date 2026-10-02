@@ -282,10 +282,10 @@ function filasDeOferta(p: Plan): OfferInsert[] {
     host_id: p.host.id,
     club_id: p.club.id,
     pases_disponibles: p.pases,
-    caddie_incluido: p.caddie,
+    caddie_compartido: p.caddie,
     carrito_compartido: p.carrito,
     ...p.costos,
-    costo_estimado: totalCostos(p.costos),
+    costo_estimado: totalCostos(p.costos, { carrito: p.carrito, caddie: p.caddie }),
     nota: `${NOTA_PREFIX} Ronda de prueba en ${p.club.nombre}`,
   } as Omit<OfferInsert, "fecha" | "hora" | "fecha_flexible">;
   return p.flexible
@@ -497,7 +497,7 @@ async function main() {
       if (row.pases_confirmados !== o.aprobadas) problemas.push(`pases_confirmados=${row.pases_confirmados}, esperado ${o.aprobadas}`);
       const cerrada = row.pases_confirmados >= row.pases_disponibles;
       if ((row.estado === "cerrada") !== cerrada) problemas.push(`estado=${row.estado} con ${row.pases_confirmados}/${row.pases_disponibles} pases`);
-      if (Number(row.costo_estimado ?? 0) !== totalCostos(o.plan.costos)) problemas.push(`costo_estimado=${row.costo_estimado}, esperado ${totalCostos(o.plan.costos)}`);
+      if (Number(row.costo_estimado ?? 0) !== totalCostos(o.plan.costos, { carrito: o.plan.carrito, caddie: o.plan.caddie })) problemas.push(`costo_estimado=${row.costo_estimado}, esperado ${totalCostos(o.plan.costos, { carrito: o.plan.carrito, caddie: o.plan.caddie })}`);
       if (row.fecha_flexible !== o.plan.flexible) problemas.push("fecha_flexible no coincide");
       if (!row.fecha_flexible) {
         const t = row.fecha && row.hora ? desdeMexico(row.fecha, row.hora.slice(0, 5)).getTime() : NaN;

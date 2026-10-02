@@ -96,7 +96,7 @@ async function createOffer(params: {
   hora: string;
   pases_disponibles: number;
   pases_confirmados?: number;
-  caddie_incluido: boolean;
+  caddie_compartido: boolean;
   carrito_compartido: boolean;
   costo_estimado: number;
   nota: string;
@@ -111,7 +111,7 @@ async function createOffer(params: {
       hora: params.hora,
       pases_disponibles: params.pases_disponibles,
       pases_confirmados: params.pases_confirmados ?? 0,
-      caddie_incluido: params.caddie_incluido,
+      caddie_compartido: params.caddie_compartido,
       carrito_compartido: params.carrito_compartido,
       costo_estimado: params.costo_estimado,
       nota: params.nota,
@@ -208,7 +208,7 @@ async function main() {
     fecha: daysFromNow(2),
     hora: "07:00",
     pases_disponibles: 2,
-    caddie_incluido: true,
+    caddie_compartido: true,
     carrito_compartido: false,
     costo_estimado: 450,
     nota: "Nos vemos en la caseta de golfistas 15 min antes. Vestimenta: polo y pantalón/bermuda de golf.",
@@ -220,7 +220,7 @@ async function main() {
     fecha: daysFromNow(3),
     hora: "07:30",
     pases_disponibles: 2,
-    caddie_incluido: true,
+    caddie_compartido: true,
     carrito_compartido: true,
     costo_estimado: 500,
     nota: "Punto de encuentro: recepción del club. Traer identificación de socio.",
@@ -233,7 +233,7 @@ async function main() {
     hora: "08:00",
     pases_disponibles: 1,
     pases_confirmados: 1,
-    caddie_incluido: false,
+    caddie_compartido: false,
     carrito_compartido: true,
     costo_estimado: 300,
     nota: "Nos vemos en el driving range 20 min antes para calentar.",
@@ -246,7 +246,7 @@ async function main() {
     hora: "09:00",
     pases_disponibles: 1,
     pases_confirmados: 1,
-    caddie_incluido: true,
+    caddie_compartido: true,
     carrito_compartido: true,
     costo_estimado: 400,
     nota: "Gracias por acompañarme, nos vemos en la caseta principal.",
@@ -259,7 +259,7 @@ async function main() {
     fecha: daysFromNow(6),
     hora: "07:00",
     pases_disponibles: 1,
-    caddie_incluido: false,
+    caddie_compartido: false,
     carrito_compartido: false,
     costo_estimado: 0,
     nota: "Ronda relajada de domingo, todos los niveles son bienvenidos.",

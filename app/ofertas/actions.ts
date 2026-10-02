@@ -21,7 +21,7 @@ export async function createOffer(_prevState: unknown, formData: FormData) {
   const club_id = String(formData.get("club_id") ?? "");
   const flexible = formData.get("fecha_flexible") === "on";
   const pases_disponibles = Number(formData.get("pases_disponibles") ?? 1);
-  const caddie_incluido = formData.get("caddie_incluido") === "on";
+  const caddie_compartido = formData.get("caddie_compartido") === "on";
   const carrito_compartido = formData.get("carrito_compartido") === "on";
   const nota = String(formData.get("nota") ?? "").trim();
 
@@ -76,11 +76,12 @@ export async function createOffer(_prevState: unknown, formData: FormData) {
     host_id: profile.id,
     club_id,
     pases_disponibles,
-    caddie_incluido,
+    caddie_compartido,
     carrito_compartido,
     ...costos,
-    // costo_estimado guarda el TOTAL de los conceptos (ver migración 0008).
-    costo_estimado: totalCostos(costos),
+    // costo_estimado guarda lo que paga el invitado en total: carrito y caddie
+    // compartidos ya divididos entre 2 (los costos guardan el monto completo).
+    costo_estimado: totalCostos(costos, { carrito: carrito_compartido, caddie: caddie_compartido }),
     nota: nota || null,
   };
 
