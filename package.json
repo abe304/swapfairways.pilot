@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed": "tsx scripts/seed.ts"
+    "seed": "tsx scripts/seed.ts",
+    "simulate": "tsx scripts/simulate-e2e.ts",
+    "simulate:live": "tsx scripts/simulate-e2e.ts --live"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",

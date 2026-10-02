@@ -143,3 +143,18 @@ export const RPC_FUNCTIONS: Record<
     args: Record<string, string>,
   ) => RpcResult,
 };
+
+// Despacho común para cualquier cliente mock (con cookies en la app, o fijo
+// a un usuario en la simulación automática).
+export async function mockRpc(
+  currentUserId: string | null,
+  name: string,
+  args: Record<string, string>,
+) {
+  if (!currentUserId) return { data: null, error: { message: "No autenticado" } };
+  const fn = RPC_FUNCTIONS[name];
+  if (!fn) return { data: null, error: { message: `RPC ${name} no implementada en modo demo` } };
+  const result = fn(currentUserId, args);
+  if (result.error) return { data: null, error: { message: result.error } };
+  return { data: result.data, error: null };
+}

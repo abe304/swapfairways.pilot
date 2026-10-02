@@ -206,8 +206,31 @@ export class MockQueryBuilder implements PromiseLike<MockResult<unknown>> {
     return { data: projected, error: null };
   }
 
+  // Emula una limitación real de PostgREST: el ORDER BY de una mutación se
+  // aplica sobre el resultado del INSERT/UPDATE (solo las columnas del
+  // select), no sobre la tabla — ordenar por una columna no seleccionada
+  // falla con 42703. Sin esto el demo es más permisivo que producción y
+  // este bug no se detecta localmente.
+  private mutationOrderError(): MockResult<unknown> | null {
+    if (!this.orderCol) return null;
+    const fields = this.selectCols ? parseSelect(this.selectCols) : [];
+    const incluida = fields.some(
+      (f) => f.kind === "all" || (f.kind === "column" && f.name === this.orderCol),
+    );
+    if (incluida) return null;
+    return {
+      data: null,
+      error: { message: `column ${this.table}.${this.orderCol} does not exist`, code: "42703" },
+    };
+  }
+
   private async execute(): Promise<MockResult<unknown>> {
     const table = store[this.table];
+
+    if (this.mode !== "select") {
+      const orderError = this.mutationOrderError();
+      if (orderError) return orderError;
+    }
 
     if (this.mode === "select") {
       let rows = table.filter((r) => this.matches(r));

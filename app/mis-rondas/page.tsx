@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { Card, Badge } from "@/components/ui/Card";
 import { formatFecha, formatHora, nombreConHc } from "@/lib/utils";
+import { HOSTED_OFFERS_SELECT, MY_REQUESTS_SELECT } from "@/lib/queries";
 import { approveRequest, rejectRequest, markPlayed } from "./actions";
 import { ActionButton } from "./ActionButton";
 
@@ -60,18 +61,14 @@ export default async function MisRondasPage({
 
   const { data: hostedOffersRaw } = await supabase
     .from("tee_time_offers")
-    .select(
-      "id, fecha, hora, fecha_flexible, pases_disponibles, pases_confirmados, clubs(nombre), requests(id, estado, guest_id, profiles!requests_guest_id_fkey(nombre, handicap_manual))",
-    )
+    .select(HOSTED_OFFERS_SELECT)
     .eq("host_id", profile.id)
     .order("fecha", { ascending: true });
   const hostedOffers = (hostedOffersRaw ?? []) as unknown as HostedOffer[];
 
   const { data: myRequestsRaw } = await supabase
     .from("requests")
-    .select(
-      "id, estado, offer_id, tee_time_offers(fecha, hora, fecha_flexible, host_id, clubs(nombre), profiles!tee_time_offers_host_id_fkey(nombre, handicap_manual))",
-    )
+    .select(MY_REQUESTS_SELECT)
     .eq("guest_id", profile.id)
     .order("created_at", { ascending: false });
   const myRequests = (myRequestsRaw ?? []) as unknown as GuestRequest[];

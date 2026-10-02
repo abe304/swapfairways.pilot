@@ -6,6 +6,8 @@ import { Card, Badge } from "@/components/ui/Card";
 import { LinkButton } from "@/components/ui/Button";
 import { formatFecha, formatHora, formatMoneda, mapsUrl } from "@/lib/utils";
 import { RequestButton } from "./RequestButton";
+import { OFFER_DETAIL_SELECT } from "@/lib/queries";
+import { COSTO_CONCEPTOS, totalCostos, type Costos } from "@/lib/offers";
 
 const ESTADO_LABEL: Record<string, string> = {
   pendiente: "Solicitud enviada — esperando al anfitrión",
@@ -41,9 +43,7 @@ export default async function OfertaDetallePage({
 
   const { data: offer } = await supabase
     .from("tee_time_offers")
-    .select(
-      "*, clubs(nombre, ciudad, direccion, tipo, latitud, longitud, reglamento, requiere_caddie_invitado, carrito_obligatorio, requiere_ghin, recomendacion_llegada, costo_creditos), profiles!tee_time_offers_host_id_fkey(id, nombre, handicap_manual, ghin_id)",
-    )
+    .select(OFFER_DETAIL_SELECT)
     .eq("id", id)
     .single();
 
@@ -60,6 +60,19 @@ export default async function OfertaDetallePage({
       } | null;
     }
   ).profiles;
+
+  const desglose = [
+    ...COSTO_CONCEPTOS.map((c) => ({
+      label: c.label,
+      monto: (offer as unknown as Record<string, number | null>)[c.key],
+      nota: "",
+    })),
+    {
+      label: "Otros cargos",
+      monto: offer.costo_otros,
+      nota: offer.concepto_otros ?? "",
+    },
+  ].filter((d): d is { label: string; monto: number; nota: string } => !!d.monto && d.monto > 0);
 
   const isHost = offer.host_id === profile.id;
   const cuposLibres = offer.pases_disponibles - offer.pases_confirmados;
@@ -125,17 +138,15 @@ export default async function OfertaDetallePage({
           {offer.caddie_incluido ? (
             <Badge>
               Caddie incluido
-              {offer.costo_caddie ? ` (${formatMoneda(offer.costo_caddie)})` : ""}
             </Badge>
           ) : null}
           {offer.carrito_compartido ? (
             <Badge>
               Carrito compartido
-              {offer.costo_carrito ? ` (${formatMoneda(offer.costo_carrito)})` : ""}
             </Badge>
           ) : null}
           {offer.costo_estimado ? (
-            <Badge tone="gold">Costo de visita: {formatMoneda(offer.costo_estimado)}</Badge>
+            <Badge tone="gold">Costo aprox.: {formatMoneda(offer.costo_estimado)}</Badge>
           ) : null}
           {costoCreditos !== 1 ? (
             <Badge tone="gold">Vale {costoCreditos} créditos</Badge>
@@ -210,18 +221,22 @@ export default async function OfertaDetallePage({
                 <span className="font-medium">Tu GHIN:</span> {host.ghin_id}
               </p>
             ) : null}
-            {offer.costo_estimado || offer.costo_caddie || offer.costo_carrito ? (
+            {desglose.length > 0 || offer.costo_estimado ? (
               <div className="rounded-md bg-swf-dorado/10 p-3 text-swf-verde">
                 <p>Costos aproximados a pagar directo en el club (no a través de SWF):</p>
-                <ul className="mt-1 list-disc pl-5">
-                  {offer.costo_estimado ? (
-                    <li>Visita: {formatMoneda(offer.costo_estimado)}</li>
-                  ) : null}
-                  {offer.costo_caddie ? <li>Caddie: {formatMoneda(offer.costo_caddie)}</li> : null}
-                  {offer.costo_carrito ? (
-                    <li>Carrito: {formatMoneda(offer.costo_carrito)}</li>
-                  ) : null}
-                </ul>
+                {desglose.length > 0 ? (
+                  <ul className="mt-1 list-disc pl-5">
+                    {desglose.map((d) => (
+                      <li key={d.label}>
+                        {d.label}: {formatMoneda(d.monto)}
+                        {d.nota ? ` (${d.nota})` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                <p className="mt-1 font-medium">
+                  Total aproximado: {formatMoneda(offer.costo_estimado ?? totalCostos(offer as Costos))}
+                </p>
               </div>
             ) : null}
           </div>

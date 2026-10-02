@@ -70,6 +70,15 @@ export type TeeTimeOffer = {
   costo_estimado: number | null;
   costo_caddie: number | null;
   costo_carrito: number | null;
+  costo_green_fee: number | null;
+  costo_desayuno: number | null;
+  costo_snacks: number | null;
+  costo_bebidas: number | null;
+  costo_renta_equipo: number | null;
+  consumo_minimo: number | null;
+  propina_recomendada: number | null;
+  costo_otros: number | null;
+  concepto_otros: string | null;
   nota: string | null;
   estado: OfferEstado;
   created_at: string;

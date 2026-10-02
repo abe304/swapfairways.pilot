@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/Button";
 import { FormField, Input, Textarea } from "@/components/ui/Field";
 import { Card } from "@/components/ui/Card";
 import { ClubCombobox } from "@/components/ClubCombobox";
-import { formatFecha, formatHora } from "@/lib/utils";
+import { formatFecha, formatHora, formatMoneda } from "@/lib/utils";
+import { COSTO_CONCEPTOS, totalCostos, type Costos, type CostoKey } from "@/lib/offers";
 import type { Club } from "@/lib/supabase/types";
 
 export function OfferForm({
@@ -23,15 +24,22 @@ export function OfferForm({
   const [fechas, setFechas] = useState<Array<{ fecha: string; hora: string }>>([]);
   const [fechaInput, setFechaInput] = useState("");
   const [horaInput, setHoraInput] = useState("");
-  const [caddieIncluido, setCaddieIncluido] = useState(false);
-  const [carritoCompartido, setCarritoCompartido] = useState(false);
-  const [costoEstimado, setCostoEstimado] = useState("");
+  const [costos, setCostos] = useState<Partial<Record<CostoKey, string>>>({});
   const [presetClub, setPresetClub] = useState<Club | null>(null);
   const today = new Date().toISOString().slice(0, 10);
+  const totalEstimado = totalCostos(
+    Object.fromEntries(
+      Object.entries(costos).map(([k, v]) => [k, v ? Number(v) || 0 : 0]),
+    ) as Costos,
+  );
 
   function handleClubSelect(club: Club) {
+    // El costo sugerido del club es el green fee: solo prellena si el
+    // anfitrión no ha capturado uno.
     if (club.costo_visita_sugerido != null) {
-      setCostoEstimado(String(club.costo_visita_sugerido));
+      setCostos((prev) =>
+        prev.costo_green_fee ? prev : { ...prev, costo_green_fee: String(club.costo_visita_sugerido) },
+      );
     }
   }
 
@@ -90,6 +98,7 @@ export function OfferForm({
             <div className="flex flex-wrap gap-2">
               <Input
                 id="fecha_input"
+                name="fecha_pendiente"
                 type="date"
                 min={today}
                 value={fechaInput}
@@ -97,6 +106,7 @@ export function OfferForm({
                 className="flex-1"
               />
               <Input
+                name="hora_pendiente"
                 type="time"
                 value={horaInput}
                 onChange={(e) => setHoraInput(e.target.value)}
@@ -129,7 +139,7 @@ export function OfferForm({
               </div>
             ) : (
               <p className="mt-1 text-xs text-swf-verde/50">
-                Agrega cada fecha con su hora (pueden ser distintas) y luego &quot;+ Agregar&quot;.
+                Elige fecha y hora y presiona &quot;+ Agregar&quot; para sumar más de una (pueden tener horas distintas). Si solo es una, basta con llenarla y publicar.
               </p>
             )}
           </FormField>
@@ -147,68 +157,78 @@ export function OfferForm({
           />
         </FormField>
 
-        <div className="space-y-3">
-          <div>
-            <label className="flex items-center gap-2 text-sm text-swf-verde">
-              <input
-                type="checkbox"
-                name="caddie_incluido"
-                className="h-4 w-4"
-                checked={caddieIncluido}
-                onChange={(e) => setCaddieIncluido(e.target.checked)}
-              />
-              Caddie incluido
-            </label>
-            {caddieIncluido ? (
-              <Input
-                name="costo_caddie"
-                type="number"
-                min={0}
-                step="1"
-                placeholder="Costo del caddie (MXN, opcional)"
-                className="mt-2"
-              />
-            ) : null}
-          </div>
-          <div>
-            <label className="flex items-center gap-2 text-sm text-swf-verde">
-              <input
-                type="checkbox"
-                name="carrito_compartido"
-                className="h-4 w-4"
-                checked={carritoCompartido}
-                onChange={(e) => setCarritoCompartido(e.target.checked)}
-              />
-              Carrito compartido
-            </label>
-            {carritoCompartido ? (
-              <Input
-                name="costo_carrito"
-                type="number"
-                min={0}
-                step="1"
-                placeholder="Costo del carrito (MXN, opcional)"
-                className="mt-2"
-              />
-            ) : null}
-          </div>
+        <div className="flex flex-wrap gap-6">
+          <label className="flex items-center gap-2 text-sm text-swf-verde">
+            <input type="checkbox" name="caddie_incluido" className="h-4 w-4" />
+            Caddie incluido
+          </label>
+          <label className="flex items-center gap-2 text-sm text-swf-verde">
+            <input type="checkbox" name="carrito_compartido" className="h-4 w-4" />
+            Carrito compartido
+          </label>
         </div>
 
-        <FormField label="Costo estimado de la visita (MXN, opcional)" htmlFor="costo_estimado">
-          <Input
-            id="costo_estimado"
-            name="costo_estimado"
-            type="number"
-            min={0}
-            step="1"
-            placeholder="Ej. 500"
-            value={costoEstimado}
-            onChange={(e) => setCostoEstimado(e.target.value)}
-          />
-          <p className="mt-1 text-xs text-swf-verde/50">
-            Se prellena con el costo sugerido del club si está configurado — puedes cambiarlo.
+        <fieldset className="rounded-md border border-swf-verde/15 p-3">
+          <legend className="px-1 text-sm font-medium text-swf-verde">
+            Costos aproximados para el invitado (MXN)
+          </legend>
+          <p className="mb-3 text-xs text-swf-verde/60">
+            Deja en blanco lo que no aplique o ya esté incluido. Se pagan directo en el club,
+            no a través de SWF.
           </p>
-        </FormField>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {COSTO_CONCEPTOS.map((c) => (
+              <div key={c.key}>
+                <label htmlFor={c.key} className="mb-1 block text-xs font-medium text-swf-verde">
+                  {c.label}
+                </label>
+                <Input
+                  id={c.key}
+                  name={c.key}
+                  type="number"
+                  min={0}
+                  step="1"
+                  inputMode="numeric"
+                  placeholder="0"
+                  value={costos[c.key] ?? ""}
+                  onChange={(e) => setCostos((prev) => ({ ...prev, [c.key]: e.target.value }))}
+                />
+                {c.hint ? <p className="mt-0.5 text-[11px] text-swf-verde/50">{c.hint}</p> : null}
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label htmlFor="costo_otros" className="mb-1 block text-xs font-medium text-swf-verde">
+                Otros cargos
+              </label>
+              <Input
+                id="costo_otros"
+                name="costo_otros"
+                type="number"
+                min={0}
+                step="1"
+                inputMode="numeric"
+                placeholder="0"
+                value={costos.costo_otros ?? ""}
+                onChange={(e) => setCostos((prev) => ({ ...prev, costo_otros: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label htmlFor="concepto_otros" className="mb-1 block text-xs font-medium text-swf-verde">
+                Concepto de otros cargos
+              </label>
+              <Input
+                id="concepto_otros"
+                name="concepto_otros"
+                placeholder="Ej. cuota de práctica"
+              />
+            </div>
+          </div>
+          <p className="mt-3 text-sm font-medium text-swf-verde">
+            Total aproximado: {formatMoneda(totalEstimado) === "Sin costo estimado" ? "$0" : formatMoneda(totalEstimado)}
+          </p>
+        </fieldset>
 
         <FormField label="Nota para invitados" htmlFor="nota">
           <Textarea

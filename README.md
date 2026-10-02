@@ -62,7 +62,8 @@ Deliberadamente no incluido (ver brief original para el detalle de por qué):
    - `0004_limpieza_duplicados.sql` — deduplica clubes (por si `0002` se corrió más de una vez) y agrega una restricción única sobre `clubs.nombre` para que no vuelva a pasar.
    - `0005_costos.sql` — costo de visita sugerido por club, y desglose de costo de caddie/carrito por oferta.
    - `0006_multiples_clubes.sql` — un socio puede pertenecer a más de un club (tabla `profile_clubs`), con accesos rápidos al anfitrionar.
-   - `0007_directorio_gogolf.sql` — reemplaza el catálogo de la Federación por un directorio más amplio de gogolf.mx (~194 clubes nuevos). Segura de correr aunque ya tengas datos: no borra clubes en uso, y no duplica los que ya existan por nombre.
+   - `0007_directorio_gogolf.sql` — reemplaza el catálogo de la Federación por un directorio más amplio de gogolf.mx (~194 clubes nuevos). Segura de correr aunque ya tengas datos: no borra clubes en uso, y no duplica los que ya existan por nombre. **Requiere haber corrido `0006` antes** (usa la tabla `profile_clubs`).
+   - `0008_costos_estructurados.sql` — desglose de costos por oferta (green fee, desayuno, snacks, bebidas, renta de equipo, consumo mínimo, propina recomendada, otros cargos) y alta de El Cielo Country Club (Tlajomulco, Jalisco).
 
    Corre cada archivo **una sola vez y en orden** — si por error corres alguno dos veces, `0004` está pensado para poder correrse de nuevo sin problema y arreglarlo.
 3. Ve a **Project Settings > API** y copia la `Project URL`, la `anon public key` y la `service_role key`.
@@ -98,6 +99,21 @@ npm run dev
 ```
 
 Abre [http://localhost:3000](http://localhost:3000). Si corriste el seed, puedes entrar con cualquiera de los emails de `scripts/seed.ts` y la contraseña `SwapFairways2026!`.
+
+### 4b. (Opcional) Simulación automática de punta a punta
+
+`scripts/simulate-e2e.ts` publica una ronda de prueba por cada club del catálogo (en las próximas 24 h, mezclando fecha flexible/fija, caddie, carrito, 1–2 horarios y distintos perfiles de costo), envía solicitudes de juego desde usuarios invitados, las aprueba como anfitrión, marca como jugadas las flexibles, y verifica pases, estados, costos y créditos.
+
+```bash
+npm run simulate                 # contra el modo demo en memoria (no necesita credenciales)
+npm run simulate:live            # contra tu Supabase real
+npm run simulate:live -- --keep  # igual, pero conserva los datos para revisarlos en la app
+npm run simulate:live -- --cleanup-only   # solo borra los usuarios/rondas de simulación
+```
+
+Opciones: `--horizon-hours N` (24 por defecto), `--per-club N`, `--limit-clubs N`, `--hosts N`, `--guests N`, `--seed N`.
+
+Para el modo `--live` crea un archivo `.env.live` (ignorado por git) con tu `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY`. La service role key nunca debe pegarse en chats ni commitearse. Los usuarios de prueba usan el dominio `@swf-sim.test` y se borran al terminar (salvo con `--keep`). Antes de empezar revisa que las migraciones `0003`, `0005`, `0006` y `0008` estén aplicadas. Genera `sim-report.json` con el detalle.
 
 ## Despliegue en Vercel
 

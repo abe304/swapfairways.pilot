@@ -3,7 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, Badge } from "@/components/ui/Card";
 import { LinkButton } from "@/components/ui/Button";
 import { ClubCombobox } from "@/components/ClubCombobox";
-import { formatFecha, formatHora, mapsUrl, nombreConHc } from "@/lib/utils";
+import { formatFecha, formatHora, formatMoneda, mapsUrl, nombreConHc } from "@/lib/utils";
+import { OFFER_LIST_SELECT } from "@/lib/queries";
 
 type OfferClub = {
   nombre: string;
@@ -22,6 +23,7 @@ type OfferRow = {
   pases_confirmados: number;
   caddie_incluido: boolean;
   carrito_compartido: boolean;
+  costo_estimado: number | null;
   clubs: OfferClub | null;
   profiles: OfferHost | null;
 };
@@ -51,6 +53,9 @@ function OfferCard({ offer }: { offer: OfferRow }) {
         <div className="mt-3 flex flex-wrap gap-2">
           {offer.caddie_incluido ? <Badge>Caddie incluido</Badge> : null}
           {offer.carrito_compartido ? <Badge>Carrito compartido</Badge> : null}
+          {offer.costo_estimado ? (
+            <Badge tone="gold">Aprox. {formatMoneda(offer.costo_estimado)}</Badge>
+          ) : null}
         </div>
       </Link>
       {club?.direccion ? (
@@ -78,12 +83,9 @@ export default async function OfertasPage({
   const { data: clubsData } = await supabase.from("clubs").select("*").order("nombre");
   const clubs = clubsData ?? [];
 
-  const offerSelect =
-    "id, fecha, hora, fecha_flexible, pases_disponibles, pases_confirmados, caddie_incluido, carrito_compartido, clubs(nombre, ciudad, direccion, latitud, longitud), profiles!tee_time_offers_host_id_fkey(nombre, handicap_manual)";
-
   let fixedQuery = supabase
     .from("tee_time_offers")
-    .select(offerSelect)
+    .select(OFFER_LIST_SELECT)
     .eq("estado", "activa")
     .eq("fecha_flexible", false)
     .gte("fecha", new Date().toISOString().slice(0, 10))
@@ -93,7 +95,7 @@ export default async function OfertasPage({
 
   let flexQuery = supabase
     .from("tee_time_offers")
-    .select(offerSelect)
+    .select(OFFER_LIST_SELECT)
     .eq("estado", "activa")
     .eq("fecha_flexible", true)
     .order("created_at", { ascending: false });

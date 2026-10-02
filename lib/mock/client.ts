@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { store, uid, nowIso, applyCreditTx } from "./store";
 import { mockFrom, type MockQueryBuilder } from "./query";
-import { RPC_FUNCTIONS } from "./rpc";
+import { mockRpc } from "./rpc";
 import { MOCK_SESSION_COOKIE } from "./is-mock";
 import type { MockTable } from "./store";
 
@@ -74,13 +74,7 @@ export async function createMockClient() {
       return mockFrom(table);
     },
     async rpc(name: string, args: Record<string, string>) {
-      const id = currentUserId();
-      if (!id) return { data: null, error: { message: "No autenticado" } };
-      const fn = RPC_FUNCTIONS[name];
-      if (!fn) return { data: null, error: { message: `RPC ${name} no implementada en modo demo` } };
-      const result = fn(id, args);
-      if (result.error) return { data: null, error: { message: result.error } };
-      return { data: result.data, error: null };
+      return mockRpc(currentUserId(), name, args);
     },
   };
 }
