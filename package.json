@@ -9,7 +9,8 @@
     "lint": "eslint",
     "seed": "tsx scripts/seed.ts",
     "simulate": "tsx scripts/simulate-e2e.ts",
-    "simulate:live": "tsx scripts/simulate-e2e.ts --live"
+    "simulate:live": "tsx scripts/simulate-e2e.ts --live",
+    "audit:clubs": "tsx scripts/audit-club-locations.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
