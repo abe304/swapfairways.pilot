@@ -5,7 +5,7 @@
 -- completa de clubes del socio, usada para ofrecerle accesos rápidos al
 -- anfitrionar en cualquiera de ellos.
 
-create table public.profile_clubs (
+create table if not exists public.profile_clubs (
   profile_id uuid not null references public.profiles (id) on delete cascade,
   club_id uuid not null references public.clubs (id) on delete cascade,
   created_at timestamptz not null default now(),
@@ -14,8 +14,11 @@ create table public.profile_clubs (
 
 alter table public.profile_clubs enable row level security;
 
+drop policy if exists profile_clubs_select_all on public.profile_clubs;
 create policy profile_clubs_select_all on public.profile_clubs for select using (true);
+drop policy if exists profile_clubs_insert_own on public.profile_clubs;
 create policy profile_clubs_insert_own on public.profile_clubs for insert with check (auth.uid() = profile_id);
+drop policy if exists profile_clubs_delete_own on public.profile_clubs;
 create policy profile_clubs_delete_own on public.profile_clubs for delete using (auth.uid() = profile_id);
 
 -- A todos los que ya tengan un club principal, se les da de alta ahí
