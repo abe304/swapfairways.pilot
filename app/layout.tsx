@@ -14,8 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SwapFairways — Piloto",
-  description: "Intercambia tee times con socios de tu club usando créditos.",
+  title: "SwapFairways — Juega los mejores campos de México",
+  description:
+    "La red de socios de clubes de golf de México: anfitriona una ronda, juega en otros clubes y gana créditos.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -26,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body className="min-h-full flex flex-col bg-swf-crema">
         <NavBar />
-        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
+        {children}
       </body>
     </html>
   );

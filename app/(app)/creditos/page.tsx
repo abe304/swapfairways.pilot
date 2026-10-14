@@ -7,6 +7,7 @@ const TIPO_LABEL: Record<string, string> = {
   ganado: "Ganado como anfitrión",
   gastado: "Gastado en una ronda",
   ajuste_admin: "Ajuste del administrador",
+  referido: "Recomendaste a un socio",
 };
 
 const TIPO_TONE: Record<string, "default" | "gold" | "success" | "warning" | "danger"> = {
@@ -14,6 +15,7 @@ const TIPO_TONE: Record<string, "default" | "gold" | "success" | "warning" | "da
   ganado: "success",
   gastado: "warning",
   ajuste_admin: "default",
+  referido: "gold",
 };
 
 export default async function CreditosPage() {

@@ -2,7 +2,14 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { MOCK_MODE, MOCK_SESSION_COOKIE } from "@/lib/mock/is-mock";
 
-const PUBLIC_PATHS = ["/login", "/registro"];
+// Rutas de acceso: si ya hay sesión, mandan a la app.
+const AUTH_PATHS = ["/login", "/registro"];
+// Rutas abiertas a todos (con o sin sesión): la home y el directorio de clubes.
+const OPEN_PATHS = ["/clubes"];
+
+function isOpenPath(pathname: string) {
+  return pathname === "/" || OPEN_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -43,16 +50,19 @@ export async function updateSession(request: NextRequest) {
   }
 
   const { pathname } = request.nextUrl;
-  const isPublicPath = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
+  const isAuthPath = AUTH_PATHS.some((path) => pathname.startsWith(path));
 
-  if (!user && !isPublicPath) {
+  if (!user && !isAuthPath && !isOpenPath(pathname)) {
     const url = request.nextUrl.clone();
+    // Conserva los filtros (p. ej. la búsqueda de la home) para después del login.
+    const destino = pathname + request.nextUrl.search;
     url.pathname = "/login";
-    url.searchParams.set("redirectTo", pathname);
+    url.search = "";
+    url.searchParams.set("redirectTo", destino);
     return NextResponse.redirect(url);
   }
 
-  if (user && isPublicPath) {
+  if (user && isAuthPath) {
     const url = request.nextUrl.clone();
     url.pathname = "/ofertas";
     url.search = "";

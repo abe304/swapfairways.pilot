@@ -9,7 +9,7 @@ export type RequestEstado =
   | "rechazado"
   | "jugado"
   | "cancelado";
-export type CreditTipo = "bienvenida" | "ganado" | "gastado" | "ajuste_admin";
+export type CreditTipo = "bienvenida" | "ganado" | "gastado" | "ajuste_admin" | "referido";
 export type ClubTipo = "privado" | "publico";
 
 export type Club = {
@@ -28,6 +28,7 @@ export type Club = {
   recomendacion_llegada: string | null;
   costo_creditos: number;
   costo_visita_sugerido: number | null;
+  foto_url: string | null;
   created_at: string;
 }
 
@@ -41,6 +42,43 @@ export type Profile = {
   bio: string | null;
   creditos_balance: number;
   is_admin: boolean;
+  invitado_por: string | null;
+  codigo_usado: string | null;
+  referido_pagado: boolean;
+  created_at: string;
+}
+
+export type CodigoInvitacionTipo = "usuario" | "fundador";
+
+export type CodigoInvitacion = {
+  codigo: string;
+  tipo: CodigoInvitacionTipo;
+  owner_id: string | null;
+  etiqueta: string | null;
+  email: string | null;
+  usos: number;
+  usos_maximos: number | null;
+  activo: boolean;
+  creado_por: string | null;
+  created_at: string;
+}
+
+export type AppSetting = {
+  key: string;
+  value: string;
+  updated_at: string;
+}
+
+export type ClubDocumentoTipo = "estatutos" | "reglamento" | "vestimenta" | "otro";
+
+export type ClubDocumento = {
+  id: string;
+  club_id: string;
+  tipo: ClubDocumentoTipo;
+  titulo: string;
+  url: string;
+  storage_path: string | null;
+  created_by: string | null;
   created_at: string;
 }
 
@@ -177,6 +215,40 @@ export interface Database {
           },
         ];
       };
+      codigos_invitacion: {
+        Row: CodigoInvitacion;
+        Insert: Partial<CodigoInvitacion> & { codigo: string; tipo: CodigoInvitacionTipo };
+        Update: Partial<CodigoInvitacion>;
+        Relationships: [
+          {
+            foreignKeyName: "codigos_invitacion_owner_id_fkey";
+            columns: ["owner_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      app_settings: {
+        Row: AppSetting;
+        Insert: Partial<AppSetting> & { key: string; value: string };
+        Update: Partial<AppSetting>;
+        Relationships: [];
+      };
+      club_documentos: {
+        Row: ClubDocumento;
+        Insert: Partial<ClubDocumento> & { club_id: string; titulo: string; url: string };
+        Update: Partial<ClubDocumento>;
+        Relationships: [
+          {
+            foreignKeyName: "club_documentos_club_id_fkey";
+            columns: ["club_id"];
+            isOneToOne: false;
+            referencedRelation: "clubs";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       tee_time_offers: {
         Row: TeeTimeOffer;
         Insert: Partial<TeeTimeOffer> & {
@@ -299,6 +371,10 @@ export interface Database {
       mark_request_played: {
         Args: { p_request_id: string };
         Returns: Request;
+      };
+      validar_codigo_invitacion: {
+        Args: { p_codigo: string };
+        Returns: { valido: boolean; invitador: string | null }[];
       };
     };
   };

@@ -67,6 +67,8 @@ Deliberadamente no incluido (ver brief original para el detalle de por qué):
    - `0009_fusionar_duplicados_viejos.sql` — fusiona 5 clubes del catálogo anterior que `0007` conservó por estar en uso (p. ej. "Coral Golf Resort" → "Coral Clubes Golf") con su equivalente del directorio nuevo, moviendo perfiles, accesos rápidos y ofertas.
    - `0010_caddie_compartido.sql` — renombra `caddie_incluido` a `caddie_compartido` (el caddie se comparte y su costo se divide entre 2, igual que el carrito).
    - `0011_corregir_estados_clubes.sql` — corrige el estado (y la dirección del enlace de Maps) de 34 clubes que estaban en el estado equivocado (p. ej. Tapalpa figuraba en Colima y es Jalisco). Para volver a auditar ubicaciones: `npm run audit:clubs`.
+   - `0012_invitaciones_referidos.sql` — código de invitación único por usuario, códigos de fundador, créditos por referido y **candado de seguridad en `profiles`** (antes un usuario podía editar su propio saldo de créditos y `is_admin`). Córrela antes de invitar a gente real.
+   - `0013_clubes_fotos_documentos.sql` — foto de club, documentos (estatutos/reglamentos) y bucket de Storage `clubes`.
 
    Corre cada archivo **una sola vez y en orden** — si por error corres alguno dos veces, `0004` está pensado para poder correrse de nuevo sin problema y arreglarlo.
 3. Ve a **Project Settings > API** y copia la `Project URL`, la `anon public key` y la `service_role key`.
@@ -117,6 +119,12 @@ npm run simulate:live -- --cleanup-only   # solo borra los usuarios/rondas de si
 Opciones: `--horizon-hours N` (24 por defecto), `--per-club N`, `--limit-clubs N`, `--hosts N`, `--guests N`, `--seed N`.
 
 Para el modo `--live` crea un archivo `.env.live` (ignorado por git) con tu `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY`. La service role key nunca debe pegarse en chats ni commitearse. Los usuarios de prueba usan el dominio `@swf-sim.test` y se borran al terminar (salvo con `--keep`). Antes de empezar revisa que las migraciones `0003`, `0005`, `0006` y `0008` estén aplicadas. Genera `sim-report.json` con el detalle.
+
+## Panel de administración y lanzamiento
+
+Las cuentas con `is_admin = true` ven **Admin** en la barra: `/admin/clubes` (foto, estatutos, reglamento y obligaciones de cada club) y `/admin/invitaciones` (códigos de fundador, registro solo por invitación, recompensa por referido). La home (`/`) y el directorio de clubes (`/clubes`) son públicos.
+
+Guía completa para conectar el dominio (swapfairways.com / .io), crear `mexico@…`, dar de alta a los primeros 20 socios y abrirlo a la Federación: [`docs/LANZAMIENTO.md`](docs/LANZAMIENTO.md).
 
 ## Despliegue en Vercel
 

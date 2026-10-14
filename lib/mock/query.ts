@@ -22,6 +22,15 @@ const EMBED_CONFIG: Partial<Record<MockTable, Record<string, EmbedConfig>>> = {
   profile_clubs: {
     clubs: { type: "forward", fkColumn: "club_id", target: "clubs" },
   },
+  clubs: {
+    club_documentos: { type: "reverse", fkColumn: "club_id", target: "club_documentos" },
+  },
+  club_documentos: {
+    clubs: { type: "forward", fkColumn: "club_id", target: "clubs" },
+  },
+  codigos_invitacion: {
+    profiles: { type: "forward", fkColumn: "owner_id", target: "profiles" },
+  },
   requests: {
     profiles: { type: "forward", fkColumn: "guest_id", target: "profiles" },
     tee_time_offers: { type: "forward", fkColumn: "offer_id", target: "tee_time_offers" },
@@ -31,10 +40,13 @@ const EMBED_CONFIG: Partial<Record<MockTable, Record<string, EmbedConfig>>> = {
 const TABLE_DEFAULTS: Partial<Record<MockTable, MockRow>> = {
   tee_time_offers: { pases_confirmados: 0, estado: "activa", fecha_flexible: false },
   profile_contacts: {},
+  codigos_invitacion: { usos: 0, activo: true },
+  club_documentos: { tipo: "estatutos" },
 };
 
 const UPSERT_KEY: Partial<Record<MockTable, string>> = {
   profile_contacts: "user_id",
+  app_settings: "key",
 };
 
 function splitTopLevel(input: string): string[] {

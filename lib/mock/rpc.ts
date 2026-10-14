@@ -125,7 +125,41 @@ export function mark_request_played(currentUserId: string, args: { p_request_id:
     created_at: nowIso(),
   });
 
+  // Quien invitó a alguno de los dos gana créditos la primera vez que esa
+  // persona juega una ronda (réplica de la regla de 0012_invitaciones_referidos).
+  const recompensa = Number(
+    store.app_settings.find((a) => a.key === "recompensa_referido")?.value ?? 1,
+  );
+  if (recompensa > 0) {
+    for (const userId of [request.guest_id as string, offer.host_id as string]) {
+      const perfil = store.profiles.find((p) => p.id === userId);
+      if (perfil?.invitado_por && !perfil.referido_pagado) {
+        applyCreditTx({
+          id: uid("tx"),
+          user_id: perfil.invitado_por as string,
+          tipo: "referido",
+          monto: recompensa,
+          referencia: request.id as string,
+          nota: `Recomendaste a ${perfil.nombre} y ya jugó su primera ronda`,
+          created_at: nowIso(),
+        });
+        perfil.referido_pagado = true;
+      }
+    }
+  }
+
   return { data: request };
+}
+
+// Réplica de validar_codigo_invitacion (0012): también se llama sin sesión.
+export function validarCodigo(codigoRaw: string) {
+  const codigo = String(codigoRaw ?? "").trim().toUpperCase();
+  const row = store.codigos_invitacion.find((c) => c.codigo === codigo);
+  const agotado =
+    row && row.usos_maximos != null && (row.usos as number) >= (row.usos_maximos as number);
+  if (!row || !row.activo || agotado) return [{ valido: false, invitador: null }];
+  const dueno = store.profiles.find((p) => p.id === row.owner_id);
+  return [{ valido: true, invitador: (dueno?.nombre as string) ?? null }];
 }
 
 export const RPC_FUNCTIONS: Record<
@@ -151,6 +185,9 @@ export async function mockRpc(
   name: string,
   args: Record<string, string>,
 ) {
+  if (name === "validar_codigo_invitacion") {
+    return { data: validarCodigo(args.p_codigo), error: null };
+  }
   if (!currentUserId) return { data: null, error: { message: "No autenticado" } };
   const fn = RPC_FUNCTIONS[name];
   if (!fn) return { data: null, error: { message: `RPC ${name} no implementada en modo demo` } };

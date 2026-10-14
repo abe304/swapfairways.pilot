@@ -6,6 +6,7 @@ import { Card, Badge } from "@/components/ui/Card";
 import { LinkButton } from "@/components/ui/Button";
 import { formatFecha, formatHora, formatMoneda, mapsUrl } from "@/lib/utils";
 import { RequestButton } from "./RequestButton";
+import { docTipoLabel } from "@/lib/clubes";
 import { OFFER_DETAIL_SELECT } from "@/lib/queries";
 import { COSTO_CONCEPTOS, parteInvitado, totalCostos, type Costos, type CostoKey } from "@/lib/offers";
 
@@ -82,7 +83,15 @@ export default async function OfertaDetallePage({
   const isHost = offer.host_id === profile.id;
   const cuposLibres = offer.pases_disponibles - offer.pases_confirmados;
   const costoCreditos = club?.costo_creditos ?? 1;
+  const { data: documentosClub } = await supabase
+    .from("club_documentos")
+    .select("id, tipo, titulo, url")
+    .eq("club_id", offer.club_id)
+    .order("created_at");
+  const documentos = (documentosClub ?? []) as { id: string; tipo: string; titulo: string; url: string }[];
+
   const tieneReglas =
+    documentos.length > 0 ||
     club?.reglamento ||
     club?.requiere_caddie_invitado ||
     club?.carrito_obligatorio ||
@@ -191,6 +200,28 @@ export default async function OfertaDetallePage({
               <span className="font-medium">Recomendación de llegada:</span>{" "}
               {club.recomendacion_llegada}
             </p>
+          ) : null}
+          {documentos.length > 0 ? (
+            <div className="mt-3 border-t border-swf-verde/10 pt-3">
+              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-swf-verde/60">
+                Estatutos y reglamentos
+              </p>
+              <ul className="space-y-1 text-sm">
+                {documentos.map((d) => (
+                  <li key={d.id}>
+                    <a
+                      href={d.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-swf-verde underline decoration-swf-dorado underline-offset-2 hover:text-swf-dorado"
+                    >
+                      {d.titulo}
+                    </a>{" "}
+                    <span className="text-xs text-swf-verde/50">({docTipoLabel(d.tipo)})</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ) : null}
         </Card>
       ) : null}

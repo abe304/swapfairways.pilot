@@ -31,3 +31,12 @@ export async function requireProfile(): Promise<Profile> {
   if (!profile) redirect("/login");
   return profile;
 }
+
+// Solo para páginas/acciones de administración. Un usuario sin is_admin
+// vuelve a la app normal; la base de datos aplica la misma regla por RLS,
+// esto solo evita mostrar pantallas que no podría usar.
+export async function requireAdmin(): Promise<Profile> {
+  const profile = await requireProfile();
+  if (!profile.is_admin) redirect("/ofertas");
+  return profile;
+}

@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { store, uid, nowIso, applyCreditTx } from "./store";
+import { store, uid, nowIso, applyCreditTx, generarCodigo } from "./store";
 import { mockFrom, type MockQueryBuilder } from "./query";
 import { mockRpc } from "./rpc";
 import { MOCK_SESSION_COOKIE } from "./is-mock";
@@ -8,7 +8,7 @@ import type { MockTable } from "./store";
 type SignUpArgs = {
   email: string;
   password: string;
-  options?: { data?: { nombre?: string } };
+  options?: { data?: { nombre?: string; codigo_invitacion?: string } };
 };
 
 // Expone la misma forma (auth/from/rpc) que el SupabaseClient real, pero
@@ -39,6 +39,20 @@ export async function createMockClient() {
         if (store.authUsers.some((u) => u.email === email)) {
           return { error: { message: "User already registered" } };
         }
+        // Réplica de handle_new_user (0012): redime el código de invitación
+        // y, si es obligatorio, bloquea el registro sin uno válido.
+        const codigo = String(options?.data?.codigo_invitacion ?? "").trim().toUpperCase();
+        const fila = codigo ? store.codigos_invitacion.find((c) => c.codigo === codigo) : undefined;
+        const valido =
+          !!fila &&
+          !!fila.activo &&
+          (fila.usos_maximos == null || (fila.usos as number) < (fila.usos_maximos as number));
+        const requerido = store.app_settings.find((a) => a.key === "invite_required")?.value === "true";
+        if (requerido && !valido) {
+          return { error: { message: "Se requiere un código de invitación válido para registrarte" } };
+        }
+        if (valido && fila) fila.usos = (fila.usos as number) + 1;
+
         const id = uid("user");
         store.authUsers.push({ id, email, password });
         const nombre = options?.data?.nombre || email.split("@")[0];
@@ -48,9 +62,25 @@ export async function createMockClient() {
           club_id: null,
           handicap_manual: null,
           foto_url: null,
+          ghin_id: null,
           bio: null,
           creditos_balance: 0,
           is_admin: false,
+          invitado_por: valido ? (fila!.owner_id ?? null) : null,
+          codigo_usado: valido ? codigo : null,
+          referido_pagado: false,
+          created_at: nowIso(),
+        });
+        store.codigos_invitacion.push({
+          codigo: generarCodigo(),
+          tipo: "usuario",
+          owner_id: id,
+          etiqueta: null,
+          email: null,
+          usos: 0,
+          usos_maximos: null,
+          activo: true,
+          creado_por: null,
           created_at: nowIso(),
         });
         applyCreditTx({

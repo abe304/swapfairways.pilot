@@ -6,12 +6,33 @@ import { Button } from "@/components/ui/Button";
 import { FormField, Input } from "@/components/ui/Field";
 import { Card } from "@/components/ui/Card";
 
-export function RegistroForm() {
+export function RegistroForm({
+  codigoInicial,
+  codigoRequerido,
+}: {
+  codigoInicial: string;
+  codigoRequerido: boolean;
+}) {
   const [state, action, pending] = useActionState(signUp, undefined);
 
   return (
     <Card>
       <form action={action} className="space-y-4">
+        <FormField
+          label={codigoRequerido ? "Código de invitación" : "Código de invitación (opcional)"}
+          htmlFor="codigo"
+        >
+          <Input
+            id="codigo"
+            name="codigo"
+            defaultValue={codigoInicial}
+            placeholder="SWF-XXXXXX"
+            autoCapitalize="characters"
+            autoComplete="off"
+            required={codigoRequerido}
+            className="font-mono uppercase tracking-wider"
+          />
+        </FormField>
         <FormField label="Nombre completo" htmlFor="nombre">
           <Input id="nombre" name="nombre" autoComplete="name" required />
         </FormField>

@@ -37,6 +37,34 @@ export async function sendEmail({
   }
 }
 
+function escapeHtml(texto: string) {
+  return texto
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+export function invitacionEmailHtml(params: {
+  nombre: string | null;
+  codigo: string;
+  enlace: string;
+  remitente?: string | null;
+}) {
+  const saludo = params.nombre ? `Hola ${escapeHtml(params.nombre)},` : "Hola,";
+  return `
+    <div style="font-family: sans-serif; color: #0E2B20; max-width: 520px;">
+      <h2 style="color:#0E2B20;">Te invitamos a SwapFairways</h2>
+      <p>${saludo}</p>
+      <p>Eres de las primeras personas a las que invitamos a <strong>SwapFairways</strong>, la red de socios de clubes de golf de México para intercambiar rondas: anfitriona en tu club y juega en el de otros socios.</p>
+      <p>Tu código de invitación es:</p>
+      <p style="font-size:22px;font-weight:bold;letter-spacing:3px;background:#FAF8F5;border:1px solid #C5A059;border-radius:8px;padding:12px 16px;display:inline-block;">${escapeHtml(params.codigo)}</p>
+      <p><a href="${escapeHtml(params.enlace)}" style="display:inline-block;background:#C5A059;color:#0E2B20;padding:10px 16px;border-radius:6px;text-decoration:none;font-weight:bold;">Crear mi cuenta</a></p>
+      <p style="font-size:13px;color:#555;">Una vez dentro tendrás tu propio código para invitar a otros socios y ganar créditos cuando jueguen su primera ronda.${params.remitente ? `<br/>Cualquier duda, escríbenos a ${escapeHtml(params.remitente)}.` : ""}</p>
+    </div>
+  `;
+}
+
 export function nuevaSolicitudEmailHtml(params: {
   hostNombre: string;
   guestNombre: string;

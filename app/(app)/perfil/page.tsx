@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { ProfileForm } from "./ProfileForm";
 import { Card } from "@/components/ui/Card";
+import { InviteCard } from "./InviteCard";
 import type { Club } from "@/lib/supabase/types";
 
 export default async function PerfilPage({
@@ -39,6 +40,7 @@ export default async function PerfilPage({
         </Card>
       ) : null}
       <h1 className="mb-6 text-2xl font-semibold text-swf-verde">Tu perfil</h1>
+      <InviteCard profileId={profile.id} />
       <ProfileForm
         profile={profile}
         clubs={clubs ?? []}

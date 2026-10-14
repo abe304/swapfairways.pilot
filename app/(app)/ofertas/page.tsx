@@ -3,7 +3,14 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, Badge } from "@/components/ui/Card";
 import { LinkButton } from "@/components/ui/Button";
 import { ClubCombobox } from "@/components/ClubCombobox";
-import { formatFecha, formatHora, formatMoneda, mapsUrl, nombreConHc } from "@/lib/utils";
+import {
+  formatFecha,
+  formatHora,
+  formatMoneda,
+  mapsUrl,
+  nombreConHc,
+  normalizarTexto,
+} from "@/lib/utils";
 import { OFFER_LIST_SELECT } from "@/lib/queries";
 
 type OfferClub = {
@@ -75,13 +82,27 @@ function OfferCard({ offer }: { offer: OfferRow }) {
 export default async function OfertasPage({
   searchParams,
 }: {
-  searchParams: Promise<{ club_id?: string; fecha?: string }>;
+  searchParams: Promise<{ club_id?: string; fecha?: string; q?: string; pases?: string }>;
 }) {
-  const { club_id, fecha } = await searchParams;
+  const { club_id, fecha, q, pases } = await searchParams;
+  const busqueda = (q ?? "").trim();
+  const pasesMin = Math.min(3, Math.max(0, Number(pases) || 0));
   const supabase = await createClient();
 
   const { data: clubsData } = await supabase.from("clubs").select("*").order("nombre");
   const clubs = clubsData ?? [];
+
+  // La búsqueda de texto (la que llega desde la home) coincide con el nombre,
+  // la ciudad o el estado del club, sin importar acentos.
+  const clubIdsPorTexto = busqueda
+    ? clubs
+        .filter((c) =>
+          [c.nombre, c.ciudad, c.estado].some((campo) =>
+            normalizarTexto(campo).includes(normalizarTexto(busqueda)),
+          ),
+        )
+        .map((c) => c.id)
+    : null;
 
   let fixedQuery = supabase
     .from("tee_time_offers")
@@ -91,6 +112,7 @@ export default async function OfertasPage({
     .gte("fecha", new Date().toISOString().slice(0, 10))
     .order("fecha", { ascending: true });
   if (club_id) fixedQuery = fixedQuery.eq("club_id", club_id);
+  if (clubIdsPorTexto) fixedQuery = fixedQuery.in("club_id", clubIdsPorTexto);
   if (fecha) fixedQuery = fixedQuery.eq("fecha", fecha);
 
   let flexQuery = supabase
@@ -100,11 +122,21 @@ export default async function OfertasPage({
     .eq("fecha_flexible", true)
     .order("created_at", { ascending: false });
   if (club_id) flexQuery = flexQuery.eq("club_id", club_id);
+  if (clubIdsPorTexto) flexQuery = flexQuery.in("club_id", clubIdsPorTexto);
 
   const [
-    { data: offers, error: offersError },
-    { data: flexOffers, error: flexError },
+    { data: offersRaw, error: offersError },
+    { data: flexRaw, error: flexError },
   ] = await Promise.all([fixedQuery, flexQuery]);
+
+  // "Jugadores": solo rondas con al menos ese número de pases libres.
+  const conCupo = (rows: unknown) =>
+    ((rows as OfferRow[] | null) ?? []).filter(
+      (o) => o.pases_disponibles - o.pases_confirmados >= pasesMin,
+    );
+  const offers = conCupo(offersRaw);
+  const flexOffers = conCupo(flexRaw);
+  const hayFiltros = !!(club_id || fecha || busqueda || pasesMin);
   if (offersError) console.error("[ofertas] Error cargando ofertas:", offersError);
   if (flexError) console.error("[ofertas] Error cargando ofertas flexibles:", flexError);
 
@@ -118,6 +150,13 @@ export default async function OfertasPage({
       </div>
 
       <form className="mb-6 flex flex-wrap items-start gap-3" method="get">
+        <input
+          type="search"
+          name="q"
+          defaultValue={busqueda}
+          placeholder="Club, ciudad o estado"
+          className="w-56 rounded-md border border-swf-verde/20 bg-white px-3 py-2 text-sm text-swf-verde placeholder:text-swf-verde/40"
+        />
         <div className="w-64">
           <ClubCombobox clubs={clubs} defaultValue={club_id ?? ""} emptyOptionLabel="Todos los clubes" />
         </div>
@@ -127,13 +166,24 @@ export default async function OfertasPage({
           defaultValue={fecha ?? ""}
           className="rounded-md border border-swf-verde/20 bg-white px-3 py-2 text-sm text-swf-verde"
         />
+        <select
+          name="pases"
+          defaultValue={pasesMin ? String(pasesMin) : ""}
+          aria-label="Pases libres"
+          className="rounded-md border border-swf-verde/20 bg-white px-3 py-2 text-sm text-swf-verde"
+        >
+          <option value="">Cualquier número de pases</option>
+          <option value="1">Al menos 1 pase libre</option>
+          <option value="2">Al menos 2 pases libres</option>
+          <option value="3">3 pases libres</option>
+        </select>
         <button
           type="submit"
           className="rounded-md border border-swf-verde/30 px-4 py-2 text-sm text-swf-verde hover:bg-swf-verde/5"
         >
           Filtrar
         </button>
-        {(club_id || fecha) && (
+        {hayFiltros && (
           <Link
             href="/ofertas"
             className="flex items-center text-sm text-swf-verde/60 hover:text-swf-verde"
@@ -153,23 +203,27 @@ export default async function OfertasPage({
         </Card>
       ) : null}
 
-      {!offers?.length && !flexOffers?.length ? (
+      {!offers.length && !flexOffers.length ? (
         <Card>
           <p className="text-sm text-swf-verde/70">
-            No hay rondas disponibles con esos filtros por ahora.
+            No hay rondas disponibles con esos filtros por ahora.{" "}
+            <Link href="/ofertas/nueva" className="text-swf-dorado underline">
+              Anfitriona una ronda
+            </Link>{" "}
+            o intenta con otro lugar o fecha.
           </p>
         </Card>
       ) : (
         <div className="space-y-8">
-          {offers?.length ? (
+          {offers.length ? (
             <div className="grid gap-4 sm:grid-cols-2">
-              {(offers as unknown as OfferRow[]).map((offer) => (
+              {offers.map((offer) => (
                 <OfferCard key={offer.id} offer={offer} />
               ))}
             </div>
           ) : null}
 
-          {flexOffers?.length ? (
+          {flexOffers.length ? (
             <div>
               <h2 className="mb-3 text-lg font-semibold text-swf-verde">
                 Disponibilidad flexible
@@ -179,7 +233,7 @@ export default async function OfertasPage({
                 aprueben tu solicitud.
               </p>
               <div className="grid gap-4 sm:grid-cols-2">
-                {(flexOffers as unknown as OfferRow[]).map((offer) => (
+                {flexOffers.map((offer) => (
                   <OfferCard key={offer.id} offer={offer} />
                 ))}
               </div>

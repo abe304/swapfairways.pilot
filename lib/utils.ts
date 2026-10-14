@@ -54,3 +54,18 @@ export const BEHAVIOR_TAGS = [
   "Ritmo lento",
   "Faltó a la etiqueta",
 ] as const;
+
+// Para buscar sin que importen acentos ni mayúsculas ("Querétaro" = "queretaro").
+export function normalizarTexto(texto: string | null | undefined) {
+  return (texto ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+// "Zapopan, Jalisco"; sin repetir cuando ciudad y estado son el mismo ("Ciudad de México").
+export function ubicacion(ciudad: string | null | undefined, estado: string | null | undefined) {
+  const partes = [ciudad, estado].filter((p): p is string => !!p);
+  return partes.filter((p, i) => partes.indexOf(p) === i).join(", ");
+}

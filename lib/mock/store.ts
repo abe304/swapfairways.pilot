@@ -10,7 +10,10 @@ export type MockTable =
   | "tee_time_offers"
   | "requests"
   | "credit_transactions"
-  | "reviews";
+  | "reviews"
+  | "codigos_invitacion"
+  | "app_settings"
+  | "club_documentos";
 
 export type MockAuthUser = { id: string; email: string; password: string };
 
@@ -30,6 +33,16 @@ function daysFromNow(days: number) {
   const d = new Date();
   d.setDate(d.getDate() + days);
   return d.toISOString().slice(0, 10);
+}
+
+// Mismo alfabeto y formato que generar_codigo_invitacion() en SQL (0012).
+const ALFABETO_CODIGOS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+export function generarCodigo(): string {
+  let codigo = "SWF-";
+  for (let i = 0; i < 6; i++) {
+    codigo += ALFABETO_CODIGOS[Math.floor(Math.random() * ALFABETO_CODIGOS.length)];
+  }
+  return codigo;
 }
 
 export function applyCreditTx(tx: {
@@ -65,6 +78,7 @@ function buildInitialStore(): Store {
     recomendacion_llegada: null,
     costo_creditos: 1,
     costo_visita_sugerido: null,
+    foto_url: null,
     created_at: nowIso(),
   }));
   const findClubId = (nombre: string) => {
@@ -113,7 +127,10 @@ function buildInitialStore(): Store {
         ghin_id: "4123456",
         bio: "Cuenta de prueba para explorar el piloto de SwapFairways.",
         creditos_balance: 0,
-        is_admin: false,
+        is_admin: true,
+        invitado_por: null,
+        codigo_usado: null,
+        referido_pagado: false,
         created_at: nowIso(),
       },
       {
@@ -126,6 +143,9 @@ function buildInitialStore(): Store {
         bio: "Handicap bajo, me gusta jugar temprano entre semana.",
         creditos_balance: 0,
         is_admin: false,
+        invitado_por: null,
+        codigo_usado: null,
+        referido_pagado: false,
         created_at: nowIso(),
       },
       {
@@ -138,6 +158,9 @@ function buildInitialStore(): Store {
         bio: "Aprendiendo el juego, busco rondas relajadas para practicar.",
         creditos_balance: 0,
         is_admin: false,
+        invitado_por: null,
+        codigo_usado: null,
+        referido_pagado: false,
         created_at: nowIso(),
       },
       {
@@ -150,6 +173,9 @@ function buildInitialStore(): Store {
         bio: "Socia desde hace 3 años, siempre buscando nuevos compañeros de juego.",
         creditos_balance: 0,
         is_admin: false,
+        invitado_por: null,
+        codigo_usado: null,
+        referido_pagado: false,
         created_at: nowIso(),
       },
       {
@@ -162,6 +188,9 @@ function buildInitialStore(): Store {
         bio: "Ex-competitivo, disfruto rondas rápidas y con buen ritmo.",
         creditos_balance: 0,
         is_admin: false,
+        invitado_por: null,
+        codigo_usado: null,
+        referido_pagado: false,
         created_at: nowIso(),
       },
       {
@@ -174,6 +203,9 @@ function buildInitialStore(): Store {
         bio: "Anfitrión frecuente, me encanta compartir mi tee time de los sábados.",
         creditos_balance: 0,
         is_admin: false,
+        invitado_por: null,
+        codigo_usado: null,
+        referido_pagado: false,
         created_at: nowIso(),
       },
     ],
@@ -190,6 +222,12 @@ function buildInitialStore(): Store {
     ],
     tee_time_offers: [],
     requests: [],
+    codigos_invitacion: [],
+    app_settings: [
+      { key: "invite_required", value: "false", updated_at: nowIso() },
+      { key: "recompensa_referido", value: "1", updated_at: nowIso() },
+    ],
+    club_documentos: [],
     credit_transactions: [
       {
         id: uid("tx"),
@@ -401,6 +439,36 @@ function buildInitialStore(): Store {
       created_at: daysFromNow(-5),
     },
   );
+
+  // Un código de invitación por perfil (el del usuario de prueba es fijo para
+  // poder probar el registro con código en la demo).
+  for (const profile of store.profiles) {
+    store.codigos_invitacion.push({
+      codigo: profile.id === uTest ? "SWF-TEST23" : generarCodigo(),
+      tipo: "usuario",
+      owner_id: profile.id,
+      etiqueta: null,
+      email: null,
+      usos: 0,
+      usos_maximos: null,
+      activo: true,
+      creado_por: null,
+      created_at: nowIso(),
+    });
+  }
+  // Código de fundador de ejemplo para la demo.
+  store.codigos_invitacion.push({
+    codigo: "SWF-FUND01",
+    tipo: "fundador",
+    owner_id: null,
+    etiqueta: "Socio fundador de prueba",
+    email: null,
+    usos: 0,
+    usos_maximos: 1,
+    activo: true,
+    creado_por: null,
+    created_at: nowIso(),
+  });
 
   // El balance de cada perfil se deriva de la suma del ledger, igual
   // que en producción (donde lo mantiene un trigger de Postgres).
