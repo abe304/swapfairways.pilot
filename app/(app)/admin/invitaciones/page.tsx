@@ -8,7 +8,8 @@ import { CopyButton } from "@/components/CopyButton";
 import { enlaceInvitacion } from "@/lib/invites";
 import { getSiteUrl } from "@/lib/site";
 import { FundadoresForm } from "./FundadoresForm";
-import { desactivarCodigo, reenviarInvitacion, setInviteRequired, setRecompensa } from "./actions";
+import { desactivarCodigo, setInviteRequired, setRecompensa } from "./actions";
+import { ReenviarButton } from "./ReenviarButton";
 import type { CodigoInvitacion } from "@/lib/supabase/types";
 
 export default async function AdminInvitacionesPage() {
@@ -108,12 +109,7 @@ export default async function AdminInvitacionesPage() {
                       <>
                         <CopyButton texto={enlaceInvitacion(siteUrl, c.codigo)} etiqueta="Copiar enlace" />
                         {c.email && correoDisponible ? (
-                          <form action={reenviarInvitacion}>
-                            <input type="hidden" name="codigo" value={c.codigo} />
-                            <button type="submit" className="text-xs text-swf-verde underline">
-                              Reenviar correo
-                            </button>
-                          </form>
+                          <ReenviarButton codigo={c.codigo} />
                         ) : null}
                         <form action={desactivarCodigo}>
                           <input type="hidden" name="codigo" value={c.codigo} />

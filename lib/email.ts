@@ -14,10 +14,10 @@ export async function sendEmail({
   to: string;
   subject: string;
   html: string;
-}) {
+}): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!RESEND_API_KEY) {
     console.log(`[email] RESEND_API_KEY no configurada, se omite: "${subject}" a ${to}`);
-    return;
+    return { ok: false, error: "El envío de correos no está configurado." };
   }
 
   try {
@@ -30,10 +30,18 @@ export async function sendEmail({
       body: JSON.stringify({ from: FROM_EMAIL, to, subject, html }),
     });
     if (!res.ok) {
-      console.error("[email] Resend devolvió un error:", res.status, await res.text());
+      const detalle = await res.text();
+      console.error("[email] Resend devolvió un error:", res.status, detalle);
+      let mensaje = detalle;
+      try {
+        mensaje = (JSON.parse(detalle) as { message?: string }).message ?? detalle;
+      } catch {}
+      return { ok: false, error: `Resend (${res.status}): ${mensaje}` };
     }
+    return { ok: true };
   } catch (err) {
     console.error("[email] No se pudo enviar el correo:", err);
+    return { ok: false, error: "No se pudo conectar con el servicio de correo." };
   }
 }
 

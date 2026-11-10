@@ -94,7 +94,7 @@ export async function crearCodigosFundadores(_prev: unknown, formData: FormData)
     const enlace = enlaceInvitacion(siteUrl, codigo);
     let correo: CodigoCreado["correo"] = persona.email ? "omitido" : "sin_email";
     if (enviar && persona.email) {
-      await sendEmail({
+      const envio = await sendEmail({
         to: persona.email,
         subject: "Tu invitación a SwapFairways",
         html: invitacionEmailHtml({
@@ -104,7 +104,7 @@ export async function crearCodigosFundadores(_prev: unknown, formData: FormData)
           remitente: CONTACT_EMAIL,
         }),
       });
-      correo = "enviado";
+      correo = envio.ok ? "enviado" : "omitido";
     }
     creados.push({ codigo, etiqueta: persona.etiqueta, email: persona.email, enlace, correo });
   }
@@ -113,7 +113,9 @@ export async function crearCodigosFundadores(_prev: unknown, formData: FormData)
   return { creados };
 }
 
-export async function reenviarInvitacion(formData: FormData) {
+export type ReenvioState = { ok: true } | { error: string } | undefined;
+
+export async function reenviarInvitacion(_prev: ReenvioState, formData: FormData): Promise<ReenvioState> {
   await requireAdmin();
   const codigo = String(formData.get("codigo") ?? "");
   const supabase = await createClient();
@@ -122,13 +124,16 @@ export async function reenviarInvitacion(formData: FormData) {
     .select("codigo, etiqueta, email, activo")
     .eq("codigo", codigo)
     .maybeSingle();
-  if (!data?.email || !data.activo) return;
+  if (!data) return { error: "No se encontró el código." };
+  if (!data.activo) return { error: "El código está desactivado." };
+  if (!data.email) return { error: "Este código no tiene correo." };
   const enlace = enlaceInvitacion(await getSiteUrl(), data.codigo);
-  await sendEmail({
+  const res = await sendEmail({
     to: data.email,
     subject: "Tu invitación a SwapFairways",
     html: invitacionEmailHtml({ nombre: data.etiqueta, codigo: data.codigo, enlace, remitente: CONTACT_EMAIL }),
   });
+  return res.ok ? { ok: true } : { error: res.error };
 }
 
 export async function desactivarCodigo(formData: FormData) {
