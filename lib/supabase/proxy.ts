@@ -3,9 +3,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { MOCK_MODE, MOCK_SESSION_COOKIE } from "@/lib/mock/is-mock";
 
 // Rutas de acceso: si ya hay sesión, mandan a la app.
-const AUTH_PATHS = ["/login", "/registro"];
-// Rutas abiertas a todos (con o sin sesión): la home y el directorio de clubes.
-const OPEN_PATHS = ["/clubes"];
+const AUTH_PATHS = ["/login", "/registro", "/recuperar"];
+// Rutas abiertas a todos (con o sin sesión): la home, el directorio de clubes
+// y /auth/confirm (enlaces de correo que inician la sesión).
+const OPEN_PATHS = ["/clubes", "/auth"];
 
 function isOpenPath(pathname: string) {
   return pathname === "/" || OPEN_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));

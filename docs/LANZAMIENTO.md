@@ -64,6 +64,29 @@ Hay dos necesidades distintas; puedes resolver una o las dos:
 
 Sin `RESEND_API_KEY` la app funciona igual: los códigos de invitación se crean y tú los compartes por WhatsApp o a mano.
 
+## 4b. Recuperar contraseña (correos de Supabase por Resend)
+
+La app ya tiene "¿Olvidaste tu contraseña?" en el login: el socio escribe su correo, recibe un enlace de un solo uso y crea una contraseña nueva en `/restablecer`. Por seguridad nunca se manda la contraseña anterior (Supabase no la guarda, solo una huella) ni una temporal.
+
+Ese correo lo manda **Supabase**, no la app. Sin SMTP propio, Supabase solo envía a los miembros de tu equipo de Supabase y muy pocos por hora, así que hay que conectarlo a Resend:
+
+1. **Supabase → Authentication → Emails → SMTP Settings** → *Enable custom SMTP*:
+   - Sender email: `mexico@swapfairways.com` · Sender name: `SwapFairways`
+   - Host: `smtp.resend.com` · Port: `465` · Username: `resend`
+   - Password: una API key de Resend (crea una exclusiva para Supabase en Resend → API Keys).
+2. **Supabase → Authentication → Emails → Templates → Reset password** (este enlace funciona aunque el socio abra el correo en otro dispositivo):
+   - Subject: `Crea tu nueva contraseña de SwapFairways`
+   - Body:
+
+```html
+<h2>Crea tu nueva contraseña</h2>
+<p>Recibimos una solicitud para cambiar la contraseña de tu cuenta de SwapFairways.</p>
+<p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/restablecer">Crear nueva contraseña</a></p>
+<p>Si no fuiste tú, ignora este correo: tu contraseña no cambia.</p>
+```
+
+3. Prueba: cierra sesión → Ingresar → *¿Olvidaste tu contraseña?* → tu correo → abre el enlace → nueva contraseña.
+
 ## 5. Dar de alta a los primeros 20 socios
 
 1. Entra a **Admin → Invitaciones**.

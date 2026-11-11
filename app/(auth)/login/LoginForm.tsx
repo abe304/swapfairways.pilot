@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { signIn } from "../actions";
 import { Button } from "@/components/ui/Button";
@@ -25,6 +26,11 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
             required
           />
         </FormField>
+        <div className="-mt-2 text-right">
+          <Link href="/recuperar" className="text-xs text-swf-verde/70 underline">
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </div>
         {state?.error ? <p className="text-sm text-red-700">{state.error}</p> : null}
         <Button type="submit" className="w-full" disabled={pending}>
           {pending ? "Ingresando..." : "Ingresar"}

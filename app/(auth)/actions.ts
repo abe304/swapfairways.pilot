@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { normalizarCodigo } from "@/lib/invites";
+import { getSiteUrl } from "@/lib/site";
 
 // Solo rutas internas: evita que ?redirectTo= mande a un sitio externo.
 function destinoSeguro(destino: string) {
@@ -92,4 +93,53 @@ export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
+}
+
+// Recuperar contraseña: Supabase manda un correo con un enlace de un solo uso
+// que lleva a /auth/confirm y de ahí a /restablecer. La respuesta es la misma
+// exista o no la cuenta, para no revelar qué correos están registrados.
+export async function solicitarRecuperacion(_prevState: unknown, formData: FormData) {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) return { error: "Escribe el correo con el que te registraste." };
+
+  const supabase = await createClient();
+  const siteUrl = await getSiteUrl();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${siteUrl}/auth/confirm?next=/restablecer`,
+  });
+
+  if (error) {
+    console.error("[recuperar] Supabase error:", { message: error.message, status: error.status });
+    if (error.status === 429) {
+      return { error: "Pediste demasiados enlaces seguidos. Espera unos minutos e inténtalo de nuevo." };
+    }
+  }
+  return { enviado: true };
+}
+
+export async function actualizarContrasena(_prevState: unknown, formData: FormData) {
+  const password = String(formData.get("password") ?? "");
+  const confirmacion = String(formData.get("confirmacion") ?? "");
+
+  if (password.length < 8) return { error: "La contraseña debe tener al menos 8 caracteres." };
+  if (password !== confirmacion) return { error: "Las contraseñas no coinciden." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "El enlace ya expiró. Pide uno nuevo en «¿Olvidaste tu contraseña?»." };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    console.error("[restablecer] Supabase error:", { message: error.message, code: error.code });
+    if (error.code === "same_password") {
+      return { error: "La nueva contraseña debe ser distinta a la anterior." };
+    }
+    return { error: "No pudimos cambiar tu contraseña. Intenta de nuevo." };
+  }
+
+  redirect("/perfil?contrasena=1");
 }

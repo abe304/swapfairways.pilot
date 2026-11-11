@@ -8,9 +8,9 @@ import type { Club } from "@/lib/supabase/types";
 export default async function PerfilPage({
   searchParams,
 }: {
-  searchParams: Promise<{ bienvenida?: string }>;
+  searchParams: Promise<{ bienvenida?: string; contrasena?: string }>;
 }) {
-  const { bienvenida } = await searchParams;
+  const { bienvenida, contrasena } = await searchParams;
   const profile = await requireProfile();
   const supabase = await createClient();
   const { data: clubs } = await supabase.from("clubs").select("*").order("nombre");
@@ -37,6 +37,11 @@ export default async function PerfilPage({
             ¡Bienvenido a SwapFairways! Ya recibiste tus créditos de bienvenida. Completa
             tu perfil para empezar a explorar y anfitrionar rondas.
           </p>
+        </Card>
+      ) : null}
+      {contrasena ? (
+        <Card className="mb-6 border-swf-dorado bg-swf-dorado/10">
+          <p className="text-sm text-swf-verde">Listo: tu contraseña se cambió.</p>
         </Card>
       ) : null}
       <h1 className="mb-6 text-2xl font-semibold text-swf-verde">Tu perfil</h1>
