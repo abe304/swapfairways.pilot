@@ -275,7 +275,7 @@ export default async function Home() {
 
       <footer className="border-t border-swf-verde/10 bg-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-sm text-swf-verde/60">
-          <span>© {new Date().getFullYear()} SwapFairways · Piloto México</span>
+          <span>© {new Date().getFullYear()} SwapFairways · México</span>
           <div className="flex gap-4">
             <Link href="/clubes" className="hover:text-swf-verde">
               Clubes
