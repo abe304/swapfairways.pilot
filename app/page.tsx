@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth";
 import { ClubPhoto } from "@/components/ClubPhoto";
+import { HeroIllustration } from "@/components/HeroIllustration";
 import { LinkButton } from "@/components/ui/Button";
 import { CONTACT_EMAIL } from "@/lib/site";
 import { ubicacion } from "@/lib/utils";
@@ -72,24 +73,10 @@ export default async function Home() {
   return (
     <div>
       {/* ---------- Hero con buscador ---------- */}
-      <section className="relative overflow-hidden bg-swf-verde text-swf-crema">
-        <svg
-          viewBox="0 0 1200 420"
-          preserveAspectRatio="xMidYMax slice"
-          className="pointer-events-none absolute inset-0 h-full w-full"
-          aria-hidden
-        >
-          <circle cx="930" cy="110" r="64" fill="#c5a059" fillOpacity="0.9" />
-          <circle cx="930" cy="110" r="96" fill="#c5a059" fillOpacity="0.12" />
-          <path d="M0 300 Q220 230 470 285 T900 262 T1200 280 V420 H0Z" fill="#163d2d" />
-          <path d="M0 345 Q260 280 560 335 T1200 320 V420 H0Z" fill="#1d4a37" />
-          <path d="M0 392 Q300 345 640 385 T1200 372 V420 H0Z" fill="#24503a" />
-          <line x1="1040" y1="236" x2="1040" y2="330" stroke="#faf8f5" strokeWidth="3" />
-          <path d="M1040 236 L1088 252 L1040 268Z" fill="#c5a059" />
-          <ellipse cx="1040" cy="332" rx="26" ry="5" fill="#0e2b20" fillOpacity="0.45" />
-        </svg>
+      <section className="relative overflow-hidden bg-gradient-to-b from-swf-verde-claro to-[#24503a] text-swf-crema">
+        <HeroIllustration />
 
-        <div className="relative mx-auto max-w-6xl px-4 pb-24 pt-14 sm:pt-20">
+        <div className="relative mx-auto max-w-6xl px-4 pb-44 pt-14 sm:pb-52 sm:pt-20">
           <p className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-swf-dorado">
             Red de socios · México
           </p>

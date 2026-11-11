@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/Logo";
 import { getCurrentProfile } from "@/lib/auth";
 import { signOut } from "@/app/(auth)/actions";
 
@@ -18,8 +19,8 @@ export async function NavBar() {
     return (
       <header className="border-b border-swf-verde/10 bg-swf-verde text-swf-crema">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
-          <Link href="/" className="text-lg font-semibold tracking-wide text-swf-dorado">
-            SwapFairways
+          <Link href="/" aria-label="SwapFairways, inicio">
+            <Logo />
           </Link>
           <nav className="flex items-center gap-4 text-sm">
             <Link href="/clubes" className="hover:text-swf-dorado">
@@ -43,8 +44,8 @@ export async function NavBar() {
   return (
     <header className="border-b border-swf-verde/10 bg-swf-verde text-swf-crema">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-        <Link href="/" className="text-lg font-semibold tracking-wide text-swf-dorado">
-          SwapFairways
+        <Link href="/" aria-label="SwapFairways, inicio">
+          <Logo />
         </Link>
         <nav className="flex flex-wrap items-center gap-4 text-sm">
           {links.map((link) => (
