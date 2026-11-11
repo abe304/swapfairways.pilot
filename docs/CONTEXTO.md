@@ -13,7 +13,7 @@ Piloto web para que socios de clubes de golf en México intercambien salidas (te
 - Modo demo: si falta `NEXT_PUBLIC_SUPABASE_URL` (o es un placeholder), la app usa un backend simulado en `lib/mock/*`. Usuario demo: `test@test.com` / `testtest`.
 
 ## Estado actual
-- Migraciones corridas en la base real: **hasta la 0015** (2026-11-11). La `0014_invitaciones_telefono.sql` se corrió en Supabase pero **no está en el repo**; la `0015_admin_usuarios.sql` da la lista de usuarios en `/admin/usuarios`.
+- Migraciones corridas en la base real: **hasta la 0015** (2026-11-11). La `0014_invitaciones_telefono.sql` agrega `telefono` a `codigos_invitacion`; la `0015_admin_usuarios.sql` da la lista de usuarios en `/admin/usuarios`.
 - Datos de prueba borrados el 2026-11-11 con `supabase/scripts/limpieza_*.sql`: solo quedan Abraham, Iván y Druso, sin rondas.
 - Funciones hechas: home pública con buscador, directorio de 254 clubes con estados corregidos, ofertas con varias fechas y pases por fecha, costos desglosados (carrito y caddie compartidos se dividen a la mitad para el invitado), solicitudes/aprobación, créditos, códigos de invitación (usuario y fundador) con recompensa por referido, panel `/admin` (clubes, documentos, invitaciones), candado de seguridad sobre `profiles`.
 - **Código en GitHub y Vercel:** el commit `22f8657` (home, invitaciones, admin, migraciones 0012/0013) se subió el 2026-11-09 y Vercel lo desplegó en producción. El push se hace con `gh` autenticado (`gh auth login`).

@@ -56,6 +56,7 @@ export type CodigoInvitacion = {
   owner_id: string | null;
   etiqueta: string | null;
   email: string | null;
+  telefono?: string | null;
   usos: number;
   usos_maximos: number | null;
   activo: boolean;
