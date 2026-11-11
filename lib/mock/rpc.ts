@@ -189,6 +189,29 @@ export async function mockRpc(
     return { data: validarCodigo(args.p_codigo), error: null };
   }
   if (!currentUserId) return { data: null, error: { message: "No autenticado" } };
+  if (name === "admin_listar_usuarios") {
+    const yo = store.profiles.find((p) => p.id === currentUserId);
+    if (!yo?.is_admin) return { data: null, error: { message: "Solo administradores" } };
+    const data = store.profiles.map((p) => {
+      const auth = store.authUsers.find((u) => u.id === p.id);
+      return {
+        id: p.id,
+        nombre: p.nombre,
+        email: auth?.email ?? "",
+        telefono: store.profile_contacts.find((c) => c.user_id === p.id)?.telefono ?? null,
+        club: store.clubs.find((c) => c.id === p.club_id)?.nombre ?? null,
+        creditos: p.creditos_balance,
+        is_admin: p.is_admin,
+        codigo_usado: p.codigo_usado ?? null,
+        invitado_por: store.profiles.find((x) => x.id === p.invitado_por)?.nombre ?? null,
+        rondas_publicadas: store.tee_time_offers.filter((o) => o.host_id === p.id).length,
+        solicitudes: store.requests.filter((r) => r.guest_id === p.id).length,
+        registrado: p.created_at,
+        ultimo_acceso: null,
+      };
+    });
+    return { data, error: null };
+  }
   const fn = RPC_FUNCTIONS[name];
   if (!fn) return { data: null, error: { message: `RPC ${name} no implementada en modo demo` } };
   const result = fn(currentUserId, args);

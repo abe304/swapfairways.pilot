@@ -376,6 +376,26 @@ export interface Database {
         Args: { p_codigo: string };
         Returns: { valido: boolean; invitador: string | null }[];
       };
+      admin_listar_usuarios: {
+        Args: Record<string, never>;
+        Returns: UsuarioAdmin[];
+      };
     };
   };
 }
+
+export type UsuarioAdmin = {
+  id: string;
+  nombre: string;
+  email: string;
+  telefono: string | null;
+  club: string | null;
+  creditos: number;
+  is_admin: boolean;
+  codigo_usado: string | null;
+  invitado_por: string | null;
+  rondas_publicadas: number;
+  solicitudes: number;
+  registrado: string;
+  ultimo_acceso: string | null;
+};

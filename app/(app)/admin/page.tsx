@@ -30,6 +30,11 @@ export default async function AdminPage() {
       detalle: `${clubsConDocs} de ${clubs?.length ?? 0} clubes con documentos · ${clubsConFoto} con foto`,
     },
     {
+      href: "/admin/usuarios",
+      titulo: "Usuarios registrados",
+      detalle: `${perfiles?.length ?? 0} usuarios · nombre, correo, club, créditos y actividad · descargable a Excel`,
+    },
+    {
       href: "/admin/invitaciones",
       titulo: "Invitaciones y fundadores",
       detalle: `${perfiles?.length ?? 0} usuarios · ${fundadoresUsados}/${codigos?.length ?? 0} códigos de fundador usados · ${invitados} invitados por socios (${referidosPagados} ya jugaron) · registro ${requerido ? "solo por invitación" : "abierto"}`,
