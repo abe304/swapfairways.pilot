@@ -7,13 +7,14 @@ Piloto web para que socios de clubes de golf en México intercambien salidas (te
 
 ## Stack y dónde vive
 - Next.js 16 (App Router) + TypeScript + Tailwind v4. **Esta versión de Next tiene cambios incompatibles con lo que Claude sabe**: lee `node_modules/next/dist/docs/` antes de escribir código nuevo (ver `AGENTS.md`).
-- Supabase (Postgres, Auth email+contraseña, RLS, Storage). Las migraciones están en `supabase/migrations/` (0001–0013) y **se corren a mano** en el SQL Editor de Supabase.
+- Supabase (Postgres, Auth email+contraseña, RLS, Storage). Las migraciones están en `supabase/migrations/` (0001–0015) y **se corren a mano** en el SQL Editor de Supabase.
 - Despliegue en Vercel: https://swapfairways-pilot.vercel.app
 - Repo: github.com/abe304/swapfairways.pilot (rama `master`).
 - Modo demo: si falta `NEXT_PUBLIC_SUPABASE_URL` (o es un placeholder), la app usa un backend simulado en `lib/mock/*`. Usuario demo: `test@test.com` / `testtest`.
 
 ## Estado actual
-- Migraciones corridas en la base real: **hasta la 0013**.
+- Migraciones corridas en la base real: **hasta la 0015** (2026-11-11). La `0014_invitaciones_telefono.sql` se corrió en Supabase pero **no está en el repo**; la `0015_admin_usuarios.sql` da la lista de usuarios en `/admin/usuarios`.
+- Datos de prueba borrados el 2026-11-11 con `supabase/scripts/limpieza_*.sql`: solo quedan Abraham, Iván y Druso, sin rondas.
 - Funciones hechas: home pública con buscador, directorio de 254 clubes con estados corregidos, ofertas con varias fechas y pases por fecha, costos desglosados (carrito y caddie compartidos se dividen a la mitad para el invitado), solicitudes/aprobación, créditos, códigos de invitación (usuario y fundador) con recompensa por referido, panel `/admin` (clubes, documentos, invitaciones), candado de seguridad sobre `profiles`.
 - **Código en GitHub y Vercel:** el commit `22f8657` (home, invitaciones, admin, migraciones 0012/0013) se subió el 2026-11-09 y Vercel lo desplegó en producción. El push se hace con `gh` autenticado (`gh auth login`).
 - `invite_required` está en `false` (registro abierto) hasta repartir los códigos de fundador.

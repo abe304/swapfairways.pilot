@@ -24,7 +24,7 @@ export default async function AdminUsuariosPage() {
         <Card>
           <p className="text-sm text-red-700">
             No se pudo cargar la lista ({error.message}). Revisa que la migración{" "}
-            <code>0014_admin_usuarios.sql</code> esté corrida en Supabase.
+            <code>0015_admin_usuarios.sql</code> esté corrida en Supabase.
           </p>
         </Card>
       ) : (
