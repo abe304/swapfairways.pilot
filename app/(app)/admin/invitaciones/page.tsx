@@ -5,7 +5,7 @@ import { Badge, Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Field";
 import { CopyButton } from "@/components/CopyButton";
-import { enlaceInvitacion } from "@/lib/invites";
+import { enlaceInvitacion, formatoTelefono, mensajeWhatsApp } from "@/lib/invites";
 import { getSiteUrl } from "@/lib/site";
 import { FundadoresForm } from "./FundadoresForm";
 import { desactivarCodigo, setInviteRequired, setRecompensa } from "./actions";
@@ -96,6 +96,9 @@ export default async function AdminInvitacionesPage() {
                     <span className="font-medium text-swf-verde">{c.etiqueta ?? "Sin nombre"}</span>
                     <span className="ml-2 font-mono tracking-wider text-swf-verde">{c.codigo}</span>
                     {c.email ? <span className="ml-2 text-xs text-swf-verde/50">{c.email}</span> : null}
+                    {c.telefono ? (
+                      <span className="ml-2 text-xs text-swf-verde/50">{formatoTelefono(c.telefono)}</span>
+                    ) : null}
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     {!c.activo ? (
@@ -108,6 +111,17 @@ export default async function AdminInvitacionesPage() {
                     {!usado && c.activo ? (
                       <>
                         <CopyButton texto={enlaceInvitacion(siteUrl, c.codigo)} etiqueta="Copiar enlace" />
+                        <a
+                          href={mensajeWhatsApp(enlaceInvitacion(siteUrl, c.codigo), c.etiqueta, {
+                            telefono: c.telefono,
+                            codigo: c.codigo,
+                          })}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-swf-verde underline"
+                        >
+                          WhatsApp
+                        </a>
                         {c.email && correoDisponible ? (
                           <ReenviarButton codigo={c.codigo} />
                         ) : null}

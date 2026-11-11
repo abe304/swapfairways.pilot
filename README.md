@@ -69,6 +69,7 @@ Deliberadamente no incluido (ver brief original para el detalle de por qué):
    - `0011_corregir_estados_clubes.sql` — corrige el estado (y la dirección del enlace de Maps) de 34 clubes que estaban en el estado equivocado (p. ej. Tapalpa figuraba en Colima y es Jalisco). Para volver a auditar ubicaciones: `npm run audit:clubs`.
    - `0012_invitaciones_referidos.sql` — código de invitación único por usuario, códigos de fundador, créditos por referido y **candado de seguridad en `profiles`** (antes un usuario podía editar su propio saldo de créditos y `is_admin`). Córrela antes de invitar a gente real.
    - `0013_clubes_fotos_documentos.sql` — foto de club, documentos (estatutos/reglamentos) y bucket de Storage `clubes`.
+   - `0014_invitaciones_telefono.sql` — teléfono en los códigos de fundador, para invitar por WhatsApp directo al chat de cada persona.
 
    Corre cada archivo **una sola vez y en orden** — si por error corres alguno dos veces, `0004` está pensado para poder correrse de nuevo sin problema y arreglarlo.
 3. Ve a **Project Settings > API** y copia la `Project URL`, la `anon public key` y la `service_role key`.

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { generarCodigo, enlaceInvitacion } from "@/lib/invites";
+import { generarCodigo, enlaceInvitacion, normalizarTelefono } from "@/lib/invites";
 import { getSiteUrl, CONTACT_EMAIL } from "@/lib/site";
 import { invitacionEmailHtml, sendEmail } from "@/lib/email";
 
@@ -11,6 +11,7 @@ export type CodigoCreado = {
   codigo: string;
   etiqueta: string;
   email: string | null;
+  telefono: string | null;
   enlace: string;
   correo: "enviado" | "omitido" | "sin_email";
 };
@@ -41,7 +42,8 @@ export async function setRecompensa(formData: FormData) {
   revalidatePath("/admin/invitaciones");
 }
 
-// Una persona por línea: "Nombre, correo@ejemplo.com" (el correo es opcional).
+// Una persona por línea: "Nombre, correo o teléfono". Se pueden poner los dos
+// ("Nombre, correo, teléfono") en cualquier orden, o ninguno.
 export async function crearCodigosFundadores(_prev: unknown, formData: FormData) {
   const admin = await requireAdmin();
   const lista = String(formData.get("lista") ?? "");
@@ -54,14 +56,29 @@ export async function crearCodigosFundadores(_prev: unknown, formData: FormData)
   if (lineas.length === 0) return { error: "Escribe al menos una persona (una por línea)." };
   if (lineas.length > MAX_POR_LOTE) return { error: `Máximo ${MAX_POR_LOTE} personas por lote.` };
 
-  const personas: { etiqueta: string; email: string | null }[] = [];
+  const personas: { etiqueta: string; email: string | null; telefono: string | null }[] = [];
   for (const linea of lineas) {
-    const [nombre, correo] = linea.split(/[,;\t]/).map((p) => p.trim());
+    const [nombre, ...contactos] = linea.split(/[,;\t]/).map((p) => p.trim());
     if (!nombre) return { error: `La línea "${linea}" no tiene nombre.` };
-    if (correo && !EMAIL_RE.test(correo)) {
-      return { error: `El correo "${correo}" no parece válido (línea: "${linea}").` };
+    let email: string | null = null;
+    let telefono: string | null = null;
+    for (const dato of contactos.filter(Boolean)) {
+      if (dato.includes("@")) {
+        if (!EMAIL_RE.test(dato)) {
+          return { error: `El correo "${dato}" no parece válido (línea: "${linea}").` };
+        }
+        email = dato;
+      } else {
+        const tel = normalizarTelefono(dato);
+        if (!tel) {
+          return {
+            error: `"${dato}" no parece un correo ni un teléfono de 10 dígitos (línea: "${linea}").`,
+          };
+        }
+        telefono = tel;
+      }
     }
-    personas.push({ etiqueta: nombre, email: correo || null });
+    personas.push({ etiqueta: nombre, email, telefono });
   }
 
   const supabase = await createClient();
@@ -78,6 +95,7 @@ export async function crearCodigosFundadores(_prev: unknown, formData: FormData)
         tipo: "fundador",
         etiqueta: persona.etiqueta,
         email: persona.email,
+        telefono: persona.telefono,
         usos_maximos: 1,
         creado_por: admin.id,
       });
@@ -106,7 +124,14 @@ export async function crearCodigosFundadores(_prev: unknown, formData: FormData)
       });
       correo = envio.ok ? "enviado" : "omitido";
     }
-    creados.push({ codigo, etiqueta: persona.etiqueta, email: persona.email, enlace, correo });
+    creados.push({
+      codigo,
+      etiqueta: persona.etiqueta,
+      email: persona.email,
+      telefono: persona.telefono,
+      enlace,
+      correo,
+    });
   }
 
   revalidatePath("/admin/invitaciones");

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { FormField, Textarea } from "@/components/ui/Field";
 import { CopyButton } from "@/components/CopyButton";
-import { mensajeWhatsApp } from "@/lib/invites";
+import { formatoTelefono, mensajeWhatsApp } from "@/lib/invites";
 
 const ESTADO_CORREO: Record<CodigoCreado["correo"], string> = {
   enviado: "Correo enviado",
@@ -22,8 +22,10 @@ export function FundadoresForm({ correoDisponible }: { correoDisponible: boolean
     <Card>
       <h2 className="font-semibold text-swf-verde">Dar de alta a los primeros socios</h2>
       <p className="mb-4 mt-1 text-sm text-swf-verde/70">
-        Escribe una persona por línea: <code className="rounded bg-swf-verde/5 px-1">Nombre, correo</code>{" "}
-        (el correo es opcional). Se crea un código de un solo uso para cada una.
+        Escribe una persona por línea:{" "}
+        <code className="rounded bg-swf-verde/5 px-1">Nombre, correo o celular</code> (puedes poner los
+        dos, o ninguno). Se crea un código de un solo uso para cada una. Con celular, el botón de
+        WhatsApp abre directo el chat de esa persona con el mensaje ya escrito.
       </p>
       <form action={action} className="space-y-3">
         <FormField label="Personas" htmlFor="lista">
@@ -31,7 +33,7 @@ export function FundadoresForm({ correoDisponible }: { correoDisponible: boolean
             id="lista"
             name="lista"
             rows={6}
-            placeholder={"Ana Torres, ana@correo.com\nLuis Pérez, luis@correo.com\nMaría Gómez"}
+            placeholder={"Ana Torres, ana@correo.com\nLuis Pérez, 55 1234 5678\nMaría Gómez, maria@correo.com, 33 9876 5432"}
           />
         </FormField>
         <label className="flex items-center gap-2 text-sm text-swf-verde">
@@ -66,11 +68,14 @@ export function FundadoresForm({ correoDisponible }: { correoDisponible: boolean
                   <span className="font-medium text-swf-verde">{c.etiqueta}</span>
                   <span className="ml-2 font-mono tracking-wider text-swf-verde">{c.codigo}</span>
                   <span className="ml-2 text-xs text-swf-verde/50">{ESTADO_CORREO[c.correo]}</span>
+                  {c.telefono ? (
+                    <span className="ml-2 text-xs text-swf-verde/50">{formatoTelefono(c.telefono)}</span>
+                  ) : null}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <CopyButton texto={c.enlace} etiqueta="Copiar enlace" />
                   <a
-                    href={mensajeWhatsApp(c.enlace, c.etiqueta)}
+                    href={mensajeWhatsApp(c.enlace, c.etiqueta, { telefono: c.telefono, codigo: c.codigo })}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center rounded-md border border-swf-verde/30 px-3 py-1.5 text-sm text-swf-verde hover:bg-swf-verde/5"

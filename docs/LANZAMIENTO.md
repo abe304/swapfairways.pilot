@@ -14,6 +14,7 @@ En el SQL Editor de Supabase, en este orden (cada una se corre una sola vez; son
 |---|---|
 | `0012_invitaciones_referidos.sql` | Códigos de invitación, créditos por referido y **candado de seguridad** sobre `profiles` |
 | `0013_clubes_fotos_documentos.sql` | Foto de club, documentos (estatutos/reglamentos) y el bucket de Storage `clubes` |
+| `0014_invitaciones_telefono.sql` | Teléfono en los códigos de fundador, para invitar por WhatsApp |
 
 > **Importante — seguridad.** Antes de `0012`, cualquier usuario con sesión podía editar sus propios `creditos_balance` e `is_admin` llamando a la API de Supabase directamente. `0012` lo cierra. Córrela **antes** de invitar a gente real.
 
@@ -93,11 +94,11 @@ Ese correo lo manda **Supabase**, no la app. Sin SMTP propio, Supabase solo env�
 2. En **Dar de alta a los primeros socios** pega una persona por línea:
    ```
    Ana Torres, ana@correo.com
-   Luis Pérez, luis@correo.com
-   María Gómez
+   Luis Pérez, 55 1234 5678
+   María Gómez, maria@correo.com, 33 9876 5432
    ```
-   (el correo es opcional). Cada persona recibe un **código de fundador de un solo uso**.
-3. Con el correo configurado, la app les envía la invitación. Si no, usa **Copiar enlace** o **WhatsApp** junto a cada código.
+   (correo, celular, los dos o ninguno). El celular se guarda como `52` + 10 dígitos; también acepta `+52…`. Cada persona recibe un **código de fundador de un solo uso**.
+3. Con correo y Resend configurado, la app les envía la invitación. Con celular, el botón **WhatsApp** abre el chat de esa persona con el mensaje, el código y el enlace ya escritos: solo le das *Enviar*. El mensaje sale de la cuenta de WhatsApp abierta en ese dispositivo, así que abre el panel desde el celular que tiene el número de SwapFairways (o desde WhatsApp Web con ese número). Sin celular, WhatsApp te pide elegir el contacto.
 4. Cuando ya hayas repartido los 20 códigos, pulsa **Exigir código de invitación**: desde ese momento nadie entra sin un código válido (la base de datos también lo hace cumplir, no solo la pantalla de registro).
 5. Cada socio que entra recibe **su propio código personal** (en su perfil). Cuando alguien al que invitó juega su primera ronda, **gana créditos** (1 por defecto; ajustable en la misma pantalla de Invitaciones).
 
@@ -116,7 +117,7 @@ Notas:
 
 ## Lista de verificación antes de mandarlo a la Federación
 
-- [ ] `0012` y `0013` corridas
+- [ ] `0012`, `0013` y `0014` corridas
 - [ ] Tu cuenta es administradora
 - [ ] Dominio conectado y `NEXT_PUBLIC_SITE_URL` configurada
 - [ ] Correo `mexico@` operando (bandeja y/o Resend verificado)
