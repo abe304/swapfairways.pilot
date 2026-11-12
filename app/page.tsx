@@ -4,7 +4,7 @@ import { getCurrentProfile } from "@/lib/auth";
 import { ClubPhoto } from "@/components/ClubPhoto";
 import { HeroIllustration } from "@/components/HeroIllustration";
 import { LinkButton } from "@/components/ui/Button";
-import { CONTACT_EMAIL } from "@/lib/site";
+import { CONTACT_EMAIL, INSTAGRAM_URL } from "@/lib/site";
 import { ubicacion } from "@/lib/utils";
 
 type ClubCard = { id: string; nombre: string; estado: string | null; ciudad: string | null; foto_url: string | null };
@@ -276,10 +276,32 @@ export default async function Home() {
       <footer className="border-t border-swf-verde/10 bg-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-sm text-swf-verde/60">
           <span>© {new Date().getFullYear()} SwapFairways · México</span>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <Link href="/clubes" className="hover:text-swf-verde">
               Clubes
             </Link>
+            <a
+              href={INSTAGRAM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 hover:text-swf-verde"
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="5" />
+                <circle cx="12" cy="12" r="4" />
+                <circle cx="17.5" cy="6.5" r="0.75" fill="currentColor" stroke="none" />
+              </svg>
+              Instagram
+            </a>
             {CONTACT_EMAIL ? (
               <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-swf-verde">
                 {CONTACT_EMAIL}

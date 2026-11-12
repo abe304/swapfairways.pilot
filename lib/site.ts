@@ -15,3 +15,6 @@ export async function getSiteUrl(): Promise<string> {
 // Correo de contacto que se muestra en el sitio (ej. mexico@swapfairways.com).
 // Si no está configurado, no se muestra ninguno.
 export const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || null;
+
+// Redes sociales que se muestran en el pie de página.
+export const INSTAGRAM_URL = "https://www.instagram.com/swapfairways/";
