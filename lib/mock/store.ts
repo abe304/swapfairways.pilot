@@ -1,5 +1,7 @@
 import { MOCK_LOGIN_EMAIL, MOCK_LOGIN_PASSWORD } from "./is-mock";
 import { CLUBES_MEXICO } from "@/lib/data/clubs-mexico";
+import { NIVELES_CLUBES } from "@/lib/data/clubs-niveles";
+import { creditosPorNivel } from "@/lib/niveles";
 
 export type MockRow = Record<string, unknown>;
 export type MockTable =
@@ -76,7 +78,9 @@ function buildInitialStore(): Store {
     carrito_obligatorio: false,
     requiere_ghin: false,
     recomendacion_llegada: null,
-    costo_creditos: 1,
+    nivel: NIVELES_CLUBES[c.nombre]?.nivel ?? "gold",
+    acceso: NIVELES_CLUBES[c.nombre]?.acceso ?? "pase",
+    costo_creditos: creditosPorNivel(NIVELES_CLUBES[c.nombre]?.nivel ?? "gold"),
     costo_visita_sugerido: null,
     foto_url: null,
     created_at: nowIso(),
@@ -87,7 +91,7 @@ function buildInitialStore(): Store {
     return club.id as string;
   };
   const clubBosques = findClubId("Club de Golf México");
-  const clubGuadalajara = findClubId("Club Campestre de Guadalajara");
+  const clubGuadalajara = findClubId("Guadalajara Country Club");
 
   // Ejemplo real de reglas por club (ver punto 10 del feedback del piloto).
   const clubSantaAnita = clubs.find((c) => c.nombre === "Club Santa Anita");
@@ -100,12 +104,6 @@ function buildInitialStore(): Store {
     clubSantaAnita.costo_visita_sugerido = 1200;
   }
 
-  // Ejemplo de costo variable en créditos (punto 8): un club de mayor
-  // demanda no se intercambia 1 a 1 contra uno de menor demanda.
-  const clubChapultepec = clubs.find((c) => c.nombre === "Club de Golf Chapultepec");
-  if (clubChapultepec) {
-    clubChapultepec.costo_creditos = 2;
-  }
 
   const uTest = "user-test";
   const uCarlos = "user-carlos";

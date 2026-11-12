@@ -1,3 +1,5 @@
+import { NivelBadge } from "@/components/NivelBadge";
+import type { ClubNivel } from "@/lib/niveles";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth";
@@ -11,6 +13,7 @@ type ClubRow = {
   ciudad: string | null;
   estado: string | null;
   tipo: string;
+  nivel: ClubNivel | null;
   foto_url: string | null;
   club_documentos: { id: string }[] | null;
 };
@@ -27,7 +30,7 @@ export default async function ClubesPage({
 
   const { data } = await supabase
     .from("clubs")
-    .select("id, nombre, ciudad, estado, tipo, foto_url, club_documentos(id)")
+    .select("id, nombre, ciudad, estado, tipo, nivel, foto_url, club_documentos(id)")
     .order("nombre");
   const todos = (data as unknown as ClubRow[] | null) ?? [];
 
@@ -121,6 +124,7 @@ export default async function ClubesPage({
                     {ubicacion(club.ciudad, club.estado)}
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
+                    <NivelBadge nivel={club.nivel} />
                     <Badge>{club.tipo === "privado" ? "Privado" : "Público"}</Badge>
                     {docs > 0 ? (
                       <Badge tone="gold">

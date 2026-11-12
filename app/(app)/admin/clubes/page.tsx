@@ -3,6 +3,8 @@ import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Badge, Card } from "@/components/ui/Card";
 import { normalizarTexto } from "@/lib/utils";
+import { NivelBadge } from "@/components/NivelBadge";
+import type { ClubNivel } from "@/lib/niveles";
 
 type Fila = {
   id: string;
@@ -10,6 +12,7 @@ type Fila = {
   ciudad: string | null;
   estado: string | null;
   foto_url: string | null;
+  nivel: ClubNivel | null;
   club_documentos: { id: string }[] | null;
 };
 
@@ -25,7 +28,7 @@ export default async function AdminClubesPage({
 
   const { data } = await supabase
     .from("clubs")
-    .select("id, nombre, ciudad, estado, foto_url, club_documentos(id)")
+    .select("id, nombre, ciudad, estado, foto_url, nivel, club_documentos(id)")
     .order("nombre");
   const todos = (data as unknown as Fila[] | null) ?? [];
 
@@ -85,6 +88,7 @@ export default async function AdminClubesPage({
             <tr>
               <th className="px-4 py-3">Club</th>
               <th className="px-4 py-3">Estado</th>
+              <th className="px-4 py-3">Nivel</th>
               <th className="px-4 py-3">Documentos</th>
               <th className="px-4 py-3">Foto</th>
               <th className="px-4 py-3" />
@@ -97,6 +101,9 @@ export default async function AdminClubesPage({
                 <tr key={c.id} className="border-b border-swf-verde/5 last:border-0">
                   <td className="px-4 py-2.5 font-medium text-swf-verde">{c.nombre}</td>
                   <td className="px-4 py-2.5 text-swf-verde/70">{c.estado ?? "—"}</td>
+                  <td className="px-4 py-2.5">
+                    <NivelBadge nivel={c.nivel} />
+                  </td>
                   <td className="px-4 py-2.5">
                     {docs > 0 ? <Badge tone="success">{docs}</Badge> : <Badge tone="warning">Faltan</Badge>}
                   </td>

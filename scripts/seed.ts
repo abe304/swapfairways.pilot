@@ -132,7 +132,7 @@ async function main() {
     return id;
   };
   const clubBosques = clubId("Club de Golf México");
-  const clubGuadalajara = clubId("Club Campestre de Guadalajara");
+  const clubGuadalajara = clubId("Guadalajara Country Club");
   const clubMonterrey = clubId("Club Campestre de Monterrey");
 
   console.log("Creando socios de prueba...");

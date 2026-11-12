@@ -11,6 +11,8 @@ export type RequestEstado =
   | "cancelado";
 export type CreditTipo = "bienvenida" | "ganado" | "gastado" | "ajuste_admin" | "referido";
 export type ClubTipo = "privado" | "publico";
+import type { ClubAcceso, ClubNivel, GreenFeePaga } from "@/lib/niveles";
+export type { ClubAcceso, ClubNivel, GreenFeePaga };
 
 export type Club = {
   id: string;
@@ -27,6 +29,8 @@ export type Club = {
   requiere_ghin: boolean;
   recomendacion_llegada: string | null;
   costo_creditos: number;
+  nivel: ClubNivel;
+  acceso: ClubAcceso;
   costo_visita_sugerido: number | null;
   foto_url: string | null;
   created_at: string;
@@ -106,6 +110,7 @@ export type TeeTimeOffer = {
   pases_confirmados: number;
   caddie_compartido: boolean;
   carrito_compartido: boolean;
+  green_fee_paga: GreenFeePaga | null;
   costo_estimado: number | null;
   costo_caddie: number | null;
   costo_carrito: number | null;

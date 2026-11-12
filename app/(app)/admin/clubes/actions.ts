@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { ClubDocumentoTipo } from "@/lib/supabase/types";
+import { ACCESOS, NIVELES, creditosPorNivel } from "@/lib/niveles";
 
 function urlValida(raw: string) {
   try {
@@ -28,10 +29,9 @@ export async function updateClub(_prev: unknown, formData: FormData) {
   if (!id) return { error: "Falta el club." };
 
   const texto = (k: string) => String(formData.get(k) ?? "").trim() || null;
-  const costoCreditos = Number(formData.get("costo_creditos") ?? 1);
-  if (!Number.isInteger(costoCreditos) || costoCreditos < 1) {
-    return { error: "El costo en créditos debe ser un entero de 1 o más." };
-  }
+  const nivel = NIVELES.find((n) => n.value === formData.get("nivel"))?.value;
+  const acceso = ACCESOS.find((a) => a.value === formData.get("acceso"))?.value;
+  if (!nivel || !acceso) return { error: "Elige el nivel y el acceso del club." };
   const visitaRaw = String(formData.get("costo_visita_sugerido") ?? "").trim();
   const visita = visitaRaw === "" ? null : Number(visitaRaw);
   if (visita !== null && (Number.isNaN(visita) || visita < 0)) {
@@ -51,7 +51,9 @@ export async function updateClub(_prev: unknown, formData: FormData) {
       estado: texto("estado"),
       direccion: texto("direccion"),
       tipo,
-      costo_creditos: costoCreditos,
+      nivel,
+      acceso,
+      costo_creditos: creditosPorNivel(nivel),
       costo_visita_sugerido: visita,
       requiere_caddie_invitado: formData.get("requiere_caddie_invitado") === "on",
       carrito_obligatorio: formData.get("carrito_obligatorio") === "on",

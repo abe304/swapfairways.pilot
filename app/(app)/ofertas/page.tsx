@@ -1,3 +1,5 @@
+import { NivelBadge } from "@/components/NivelBadge";
+import { creditosOferta, type ClubAcceso, type ClubNivel, type GreenFeePaga } from "@/lib/niveles";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Card, Badge } from "@/components/ui/Card";
@@ -19,6 +21,9 @@ type OfferClub = {
   direccion: string | null;
   latitud: number | null;
   longitud: number | null;
+  nivel: ClubNivel;
+  acceso: ClubAcceso;
+  costo_creditos: number;
 };
 type OfferHost = { nombre: string; handicap_manual: number | null };
 type OfferRow = {
@@ -31,6 +36,7 @@ type OfferRow = {
   caddie_compartido: boolean;
   carrito_compartido: boolean;
   costo_estimado: number | null;
+  green_fee_paga: GreenFeePaga | null;
   clubs: OfferClub | null;
   profiles: OfferHost | null;
 };
@@ -58,6 +64,11 @@ function OfferCard({ offer }: { offer: OfferRow }) {
           Anfitrión: {nombreConHc(host?.nombre, host?.handicap_manual)}
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
+          {club ? <NivelBadge nivel={club.nivel} className="self-center" /> : null}
+          <Badge tone="gold">
+            {creditosOferta(club, offer.green_fee_paga)}{" "}
+            {creditosOferta(club, offer.green_fee_paga) === 1 ? "crédito" : "créditos"}
+          </Badge>
           {offer.caddie_compartido ? <Badge>Caddie compartido</Badge> : null}
           {offer.carrito_compartido ? <Badge>Carrito compartido</Badge> : null}
           {offer.costo_estimado ? (

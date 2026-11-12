@@ -7,6 +7,7 @@ import { requireProfile } from "@/lib/auth";
 import { formatFecha, formatHora } from "@/lib/utils";
 import { sendEmail, nuevaSolicitudEmailHtml } from "@/lib/email";
 import { insertOffers, parseCostos, totalCostos } from "@/lib/offers";
+import { seEligeGreenFee, type ClubAcceso, type GreenFeePaga } from "@/lib/niveles";
 
 // Fecha de hoy en hora del centro de México (UTC-6, sin horario de verano):
 // el servidor corre en UTC y "hoy" para el socio no es el "hoy" del servidor
@@ -83,19 +84,30 @@ export async function createOffer(_prevState: unknown, formData: FormData) {
   if ("error" in parsed) return { error: parsed.error };
   const { costos } = parsed;
 
+  const supabase = await createClient();
+
+  // Quién paga el green fee solo aplica en clubes con green fee o abiertos.
+  // Si lo cubre el anfitrión, el invitado no lo paga: no se cuenta en sus costos.
+  const { data: club } = await supabase.from("clubs").select("acceso").eq("id", club_id).single();
+  const green_fee_paga: GreenFeePaga | null = seEligeGreenFee(club?.acceso as ClubAcceso | undefined)
+    ? formData.get("green_fee_paga") === "anfitrion"
+      ? "anfitrion"
+      : "invitado"
+    : null;
+  if (green_fee_paga === "anfitrion") costos.costo_green_fee = null;
+
   const base = {
     host_id: profile.id,
     club_id,
     caddie_compartido,
     carrito_compartido,
+    green_fee_paga,
     ...costos,
     // costo_estimado guarda lo que paga el invitado en total: carrito y caddie
     // compartidos ya divididos entre 2 (los costos guardan el monto completo).
     costo_estimado: totalCostos(costos, { carrito: carrito_compartido, caddie: caddie_compartido }),
     nota: nota || null,
   };
-
-  const supabase = await createClient();
 
   // Fecha flexible: una sola oferta sin fecha/hora fija, a coordinar con
   // quien solicite unirse. Fecha fija: una oferta por cada par fecha+hora

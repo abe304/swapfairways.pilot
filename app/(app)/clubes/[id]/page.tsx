@@ -1,3 +1,5 @@
+import { NivelBadge } from "@/components/NivelBadge";
+import { CREDITOS_GREEN_FEE_INVITADO, accesoLabel, seEligeGreenFee } from "@/lib/niveles";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -67,9 +69,13 @@ export default async function ClubPage({ params }: { params: Promise<{ id: strin
               {ubicacion(club.ciudad, club.estado)}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
+              <NivelBadge nivel={club.nivel} className="px-3 py-1 text-xs" />
               <Badge>{club.tipo === "privado" ? "Club privado" : "Campo público"}</Badge>
+              <Badge>{accesoLabel(club.acceso)}</Badge>
               <Badge tone="gold">
-                {club.costo_creditos} crédito{club.costo_creditos === 1 ? "" : "s"} por ronda
+                {seEligeGreenFee(club.acceso)
+                  ? `${club.costo_creditos} crédito${club.costo_creditos === 1 ? "" : "s"} si el anfitrión cubre el green fee · ${CREDITOS_GREEN_FEE_INVITADO} si lo paga el invitado`
+                  : `${club.costo_creditos} crédito${club.costo_creditos === 1 ? "" : "s"} por ronda`}
               </Badge>
             </div>
           </div>

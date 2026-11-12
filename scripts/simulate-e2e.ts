@@ -29,6 +29,7 @@ import dotenv from "dotenv";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../lib/supabase/types";
 import { insertOffers, totalCostos, type Costos, type OfferInsert } from "../lib/offers";
+import { creditosOferta } from "../lib/niveles";
 import {
   HOSTED_OFFERS_SELECT,
   MY_REQUESTS_SELECT,
@@ -543,7 +544,9 @@ async function main() {
   const saldoFinal = await leerSaldos();
   const delta = new Map<string, number>();
   for (const a of jugadas) {
-    const costo = a.offer.plan.club.costo_creditos ?? 1;
+    // Las ofertas de la simulación no dicen quién paga el green fee: en clubes
+    // con green fee o abiertos se cobra lo de "lo paga el invitado".
+    const costo = creditosOferta(a.offer.plan.club, null);
     const g = solicitudes.find((s) => s.requestId === a.requestId)!.guest.id;
     delta.set(g, (delta.get(g) ?? 0) - costo);
     delta.set(a.offer.plan.host.id, (delta.get(a.offer.plan.host.id) ?? 0) + costo);

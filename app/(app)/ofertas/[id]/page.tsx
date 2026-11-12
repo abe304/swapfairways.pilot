@@ -1,3 +1,5 @@
+import { NivelBadge } from "@/components/NivelBadge";
+import { accesoLabel, creditosOferta, seEligeGreenFee, type ClubAcceso, type ClubNivel } from "@/lib/niveles";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -31,6 +33,8 @@ type OfferClub = {
   requiere_ghin: boolean;
   recomendacion_llegada: string | null;
   costo_creditos: number;
+  nivel: ClubNivel;
+  acceso: ClubAcceso;
 };
 
 export default async function OfertaDetallePage({
@@ -82,7 +86,7 @@ export default async function OfertaDetallePage({
 
   const isHost = offer.host_id === profile.id;
   const cuposLibres = offer.pases_disponibles - offer.pases_confirmados;
-  const costoCreditos = club?.costo_creditos ?? 1;
+  const costoCreditos = creditosOferta(club, offer.green_fee_paga);
   const { data: documentosClub } = await supabase
     .from("club_documentos")
     .select("id, tipo, titulo, url")
@@ -123,6 +127,12 @@ export default async function OfertaDetallePage({
         <div className="mb-3 flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-swf-verde">{club?.nombre}</h1>
+            {club ? (
+              <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-swf-verde/70">
+                <NivelBadge nivel={club.nivel} />
+                <span>{accesoLabel(club.acceso)}</span>
+              </p>
+            ) : null}
             {club?.ciudad ? <p className="text-sm text-swf-verde/70">{club.ciudad}</p> : null}
             {club?.direccion ? (
               <a
@@ -162,8 +172,15 @@ export default async function OfertaDetallePage({
           {offer.costo_estimado ? (
             <Badge tone="gold">Costo aprox.: {formatMoneda(offer.costo_estimado)}</Badge>
           ) : null}
-          {costoCreditos !== 1 ? (
-            <Badge tone="gold">Vale {costoCreditos} créditos</Badge>
+          <Badge tone="gold">
+            Vale {costoCreditos} {costoCreditos === 1 ? "crédito" : "créditos"}
+          </Badge>
+          {seEligeGreenFee(club?.acceso) ? (
+            <Badge>
+              {offer.green_fee_paga === "anfitrion"
+                ? "El anfitrión cubre el green fee"
+                : "El green fee lo paga el invitado"}
+            </Badge>
           ) : null}
         </div>
 

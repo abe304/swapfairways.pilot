@@ -9,6 +9,14 @@ import { ClubCombobox } from "@/components/ClubCombobox";
 import { formatFecha, formatHora, formatMoneda } from "@/lib/utils";
 import { COSTO_CONCEPTOS, parteInvitado, totalCostos, type Costos, type CostoKey } from "@/lib/offers";
 import type { Club } from "@/lib/supabase/types";
+import { NivelBadge } from "@/components/NivelBadge";
+import {
+  CREDITOS_GREEN_FEE_INVITADO,
+  accesoLabel,
+  creditosOferta,
+  seEligeGreenFee,
+  type GreenFeePaga,
+} from "@/lib/niveles";
 
 export function OfferForm({
   clubs,
@@ -27,6 +35,12 @@ export function OfferForm({
   const [pasesInput, setPasesInput] = useState(1);
   const [costos, setCostos] = useState<Partial<Record<CostoKey, string>>>({});
   const [presetClub, setPresetClub] = useState<Club | null>(null);
+  const [clubSel, setClubSel] = useState<Club | null>(
+    () => clubs.find((c) => c.id === defaultClubId) ?? null,
+  );
+  const [greenFeePaga, setGreenFeePaga] = useState<GreenFeePaga>("invitado");
+  const eligeGreenFee = seEligeGreenFee(clubSel?.acceso);
+  const anfitrionCubre = eligeGreenFee && greenFeePaga === "anfitrion";
   // Se guarda como texto para poder vaciar el campo mientras se escribe; se
   // ajusta a 1–3 al salir del campo.
   const [pasesTexto, setPasesTexto] = useState("1");
@@ -37,7 +51,10 @@ export function OfferForm({
   const compartidos = { carrito: carritoCompartido, caddie: caddieCompartido };
   const totalEstimado = totalCostos(
     Object.fromEntries(
-      Object.entries(costos).map(([k, v]) => [k, v ? Number(v) || 0 : 0]),
+      Object.entries(costos).map(([k, v]) => [
+        k,
+        v && !(anfitrionCubre && k === "costo_green_fee") ? Number(v) || 0 : 0,
+      ]),
     ) as Costos,
     compartidos,
   );
@@ -48,6 +65,7 @@ export function OfferForm({
   const totalPases = fechas.reduce((n, f) => n + f.pases, 0) + (hayPendiente ? pasesInput : 0);
 
   function handleClubSelect(club: Club) {
+    setClubSel(club);
     // El costo sugerido del club es el green fee: solo prellena si el
     // anfitrión no ha capturado uno.
     if (club.costo_visita_sugerido != null) {
@@ -95,7 +113,53 @@ export function OfferForm({
             onSelect={handleClubSelect}
             presetClub={presetClub}
           />
+          {clubSel ? (
+            <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-swf-verde/70">
+              <NivelBadge nivel={clubSel.nivel} />
+              <span>
+                {accesoLabel(clubSel.acceso)} ·{" "}
+                {creditosOferta(clubSel, eligeGreenFee ? greenFeePaga : null)}{" "}
+                {creditosOferta(clubSel, eligeGreenFee ? greenFeePaga : null) === 1 ? "crédito" : "créditos"} por
+                ronda
+              </span>
+            </p>
+          ) : null}
         </FormField>
+
+        {eligeGreenFee ? (
+          <fieldset className="rounded-md border border-swf-verde/15 p-3">
+            <legend className="px-1 text-sm font-medium text-swf-verde">¿Quién paga el green fee?</legend>
+            <p className="mb-2 text-xs text-swf-verde/60">
+              En este club se paga por jugar. Si tú lo cubres, la ronda vale lo del nivel del club;
+              si lo paga tu invitado, vale {CREDITOS_GREEN_FEE_INVITADO} crédito.
+            </p>
+            <div className="flex flex-col gap-2 text-sm text-swf-verde sm:flex-row sm:gap-6">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="green_fee_paga"
+                  value="invitado"
+                  className="h-4 w-4"
+                  checked={greenFeePaga === "invitado"}
+                  onChange={() => setGreenFeePaga("invitado")}
+                />
+                Lo paga el invitado ({CREDITOS_GREEN_FEE_INVITADO} crédito)
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="green_fee_paga"
+                  value="anfitrion"
+                  className="h-4 w-4"
+                  checked={greenFeePaga === "anfitrion"}
+                  onChange={() => setGreenFeePaga("anfitrion")}
+                />
+                Yo lo cubro ({clubSel?.costo_creditos ?? 1}{" "}
+                {(clubSel?.costo_creditos ?? 1) === 1 ? "crédito" : "créditos"})
+              </label>
+            </div>
+          </fieldset>
+        ) : null}
 
         <label className="flex items-center gap-2 text-sm text-swf-verde">
           <input
@@ -238,9 +302,13 @@ export function OfferForm({
                     step="1"
                     inputMode="numeric"
                     placeholder="0"
-                    value={costos[c.key] ?? ""}
+                    value={anfitrionCubre && c.key === "costo_green_fee" ? "" : (costos[c.key] ?? "")}
+                    disabled={anfitrionCubre && c.key === "costo_green_fee"}
                     onChange={(e) => setCostos((prev) => ({ ...prev, [c.key]: e.target.value }))}
                   />
+                  {anfitrionCubre && c.key === "costo_green_fee" ? (
+                    <p className="mt-0.5 text-[11px] text-swf-verde/50">Tú cubres el green fee.</p>
+                  ) : null}
                   {compartible ? (
                     <>
                       <label className="mt-1 flex items-center gap-2 text-xs text-swf-verde">
@@ -265,7 +333,7 @@ export function OfferForm({
                           : "El invitado paga el monto completo."}
                       </p>
                     </>
-                  ) : c.hint ? (
+                  ) : c.hint && !(anfitrionCubre && c.key === "costo_green_fee") ? (
                     <p className="mt-0.5 text-[11px] text-swf-verde/50">{c.hint}</p>
                   ) : null}
                 </div>

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { FormField, Input, Select, Textarea } from "@/components/ui/Field";
 import type { Club } from "@/lib/supabase/types";
+import { ACCESOS, NIVELES } from "@/lib/niveles";
 
 export function ClubAdminForm({ club }: { club: Club }) {
   const [state, action, pending] = useActionState(updateClub, undefined);
@@ -25,23 +26,33 @@ export function ClubAdminForm({ club }: { club: Club }) {
         <FormField label="Dirección (se usa para el enlace de Google Maps)" htmlFor="direccion">
           <Input id="direccion" name="direccion" defaultValue={club.direccion ?? ""} />
         </FormField>
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField label="Nivel" htmlFor="nivel">
+            <Select id="nivel" name="nivel" defaultValue={club.nivel ?? "gold"}>
+              {NIVELES.map((n) => (
+                <option key={n.value} value={n.value}>
+                  {n.label} · {n.creditos} {n.creditos === 1 ? "crédito" : "créditos"} por ronda
+                </option>
+              ))}
+            </Select>
+          </FormField>
+          <FormField label="Acceso para invitados" htmlFor="acceso">
+            <Select id="acceso" name="acceso" defaultValue={club.acceso ?? "pase"}>
+              {ACCESOS.map((a) => (
+                <option key={a.value} value={a.value}>
+                  {a.label}
+                </option>
+              ))}
+            </Select>
+            <p className="mt-1 text-xs text-swf-verde/60">
+              Con green fee o abierto, si el invitado paga el green fee la ronda cuesta 1 crédito.
+            </p>
+          </FormField>
           <FormField label="Tipo" htmlFor="tipo">
             <Select id="tipo" name="tipo" defaultValue={club.tipo}>
               <option value="privado">Privado</option>
               <option value="publico">Público</option>
             </Select>
-          </FormField>
-          <FormField label="Costo en créditos por ronda" htmlFor="costo_creditos">
-            <Input
-              id="costo_creditos"
-              name="costo_creditos"
-              type="number"
-              min={1}
-              step={1}
-              defaultValue={club.costo_creditos}
-              required
-            />
           </FormField>
           <FormField label="Green fee sugerido (MXN)" htmlFor="costo_visita_sugerido">
             <Input

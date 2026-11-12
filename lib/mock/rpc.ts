@@ -2,6 +2,7 @@
 // supabase/migrations/0001_init.sql, para que el modo demo (sin backend
 // real) tenga exactamente las mismas reglas de negocio.
 import { store, uid, nowIso, applyCreditTx, type MockRow } from "./store";
+import { creditosOferta, type ClubAcceso, type GreenFeePaga } from "@/lib/niveles";
 
 type RpcResult = { data?: MockRow; error?: string };
 
@@ -32,7 +33,10 @@ export function create_join_request(currentUserId: string, args: { p_offer_id: s
   if (activeExisting) return { error: "Ya tienes una solicitud activa para esta oferta" };
 
   const club = store.clubs.find((c) => c.id === offer.club_id);
-  const costo = (club?.costo_creditos as number) ?? 1;
+  const costo = creditosOferta(
+    club as { costo_creditos?: number; acceso?: ClubAcceso } | undefined,
+    offer.green_fee_paga as GreenFeePaga | null,
+  );
 
   const profile = store.profiles.find((p) => p.id === currentUserId);
   if (!profile || (profile.creditos_balance as number) < costo) {
