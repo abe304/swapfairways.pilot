@@ -192,6 +192,38 @@ export async function mockRpc(
   if (name === "validar_codigo_invitacion") {
     return { data: validarCodigo(args.p_codigo), error: null };
   }
+  if (name === "solicitar_invitacion") {
+    const nombre = String(args.p_nombre ?? "").trim();
+    const email = String(args.p_email ?? "").trim().toLowerCase();
+    if (!nombre) return { data: null, error: { message: "Escribe tu nombre." } };
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return { data: null, error: { message: "Escribe un correo válido." } };
+    }
+    if (store.authUsers.some((u) => u.email.toLowerCase() === email)) return { data: "ya_registrado", error: null };
+    const datos = {
+      nombre,
+      telefono: args.p_telefono || null,
+      club: args.p_club || null,
+      mensaje: args.p_mensaje || null,
+      updated_at: nowIso(),
+    };
+    const existente = store.lista_espera.find(
+      (r) => String(r.email).toLowerCase() === email && r.estado === "pendiente",
+    );
+    if (existente) {
+      Object.assign(existente, datos);
+      return { data: "actualizado", error: null };
+    }
+    store.lista_espera.push({
+      id: uid("espera"),
+      email,
+      estado: "pendiente",
+      codigo: null,
+      created_at: nowIso(),
+      ...datos,
+    });
+    return { data: "nuevo", error: null };
+  }
   if (!currentUserId) return { data: null, error: { message: "No autenticado" } };
   if (name === "admin_listar_usuarios") {
     const yo = store.profiles.find((p) => p.id === currentUserId);

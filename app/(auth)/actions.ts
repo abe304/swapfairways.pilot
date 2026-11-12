@@ -2,8 +2,9 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { normalizarCodigo } from "@/lib/invites";
-import { getSiteUrl } from "@/lib/site";
+import { normalizarCodigo, normalizarTelefono } from "@/lib/invites";
+import { getSiteUrl, CONTACT_EMAIL } from "@/lib/site";
+import { sendEmail } from "@/lib/email";
 
 // Solo rutas internas: evita que ?redirectTo= mande a un sitio externo.
 function destinoSeguro(destino: string) {
@@ -142,4 +143,56 @@ export async function actualizarContrasena(_prevState: unknown, formData: FormDa
   }
 
   redirect("/perfil?contrasena=1");
+}
+
+export type SolicitudState =
+  | { ok: "nuevo" | "actualizado" | "ya_registrado" }
+  | { error: string }
+  | undefined;
+
+// Lista de espera: quien no tiene código deja sus datos (registro solo por
+// invitación). Se guardan con la función solicitar_invitacion() (0017) y se
+// avisa por correo al administrador si hay correo de contacto configurado.
+export async function solicitarInvitacion(_prev: SolicitudState, formData: FormData): Promise<SolicitudState> {
+  const nombre = String(formData.get("nombre") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim();
+  const telefonoRaw = String(formData.get("telefono") ?? "").trim();
+  const club = String(formData.get("club") ?? "").trim();
+  const mensaje = String(formData.get("mensaje") ?? "").trim();
+
+  if (!nombre || !email) return { error: "Escribe tu nombre y tu correo." };
+  let telefono: string | null = null;
+  if (telefonoRaw) {
+    telefono = normalizarTelefono(telefonoRaw);
+    if (!telefono) return { error: "El celular debe tener 10 dígitos (por ejemplo 55 1234 5678)." };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("solicitar_invitacion", {
+    p_nombre: nombre,
+    p_email: email,
+    p_telefono: telefono,
+    p_club: club || null,
+    p_mensaje: mensaje || null,
+  });
+  if (error) {
+    console.error("[lista-espera] Supabase error:", error.message);
+    if (/correo|nombre/i.test(error.message)) return { error: error.message };
+    return { error: "No pudimos guardar tus datos. Intenta de nuevo en unos minutos." };
+  }
+
+  const resultado = (data ?? "nuevo") as "nuevo" | "actualizado" | "ya_registrado";
+  if (resultado === "nuevo" && CONTACT_EMAIL) {
+    const siteUrl = await getSiteUrl();
+    const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    await sendEmail({
+      to: CONTACT_EMAIL,
+      subject: `Nueva solicitud de invitación: ${nombre}`,
+      html: `<p><strong>${esc(nombre)}</strong> pidió una invitación a SwapFairways.</p>
+        <p>Correo: ${esc(email)}<br>Celular: ${esc(telefonoRaw || "—")}<br>Club: ${esc(club || "—")}</p>
+        ${mensaje ? `<p>Mensaje: ${esc(mensaje)}</p>` : ""}
+        <p><a href="${siteUrl}/admin/lista-espera">Ver la lista de espera</a></p>`,
+    });
+  }
+  return { ok: resultado };
 }

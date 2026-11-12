@@ -44,8 +44,8 @@ export default async function AdminInvitacionesPage() {
         <h2 className="font-semibold text-swf-verde">Acceso al registro</h2>
         <p className="mt-1 text-sm text-swf-verde/70">
           {requerido
-            ? "Hoy el registro es SOLO por invitación: nadie entra sin un código válido."
-            : "Hoy el registro está abierto: el código de invitación es opcional. Actívalo cuando ya hayas repartido los códigos de los primeros socios."}
+            ? "Hoy el registro es SOLO por invitación: nadie entra sin un código válido. Quien llegue sin código deja sus datos en la Lista de espera (Admin → Lista de espera)."
+            : "Hoy el registro está abierto: el código de invitación es opcional. Al activarlo, quien llegue sin código verá que es solo por invitación y podrá dejar sus datos en la Lista de espera."}
         </p>
         <form action={setInviteRequired} className="mt-3">
           <input type="hidden" name="valor" value={requerido ? "false" : "true"} />

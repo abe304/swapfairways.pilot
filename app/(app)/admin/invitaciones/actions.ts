@@ -3,18 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { generarCodigo, enlaceInvitacion, normalizarTelefono } from "@/lib/invites";
+import { enlaceInvitacion, normalizarTelefono } from "@/lib/invites";
+import { crearCodigoFundador, type CodigoCreado } from "@/lib/fundadores";
 import { getSiteUrl, CONTACT_EMAIL } from "@/lib/site";
 import { invitacionEmailHtml, sendEmail } from "@/lib/email";
 
-export type CodigoCreado = {
-  codigo: string;
-  etiqueta: string;
-  email: string | null;
-  telefono: string | null;
-  enlace: string;
-  correo: "enviado" | "omitido" | "sin_email";
-};
 
 const MAX_POR_LOTE = 50;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -86,52 +79,9 @@ export async function crearCodigosFundadores(_prev: unknown, formData: FormData)
   const creados: CodigoCreado[] = [];
 
   for (const persona of personas) {
-    let codigo = "";
-    let insertado = false;
-    for (let intento = 0; intento < 5 && !insertado; intento++) {
-      codigo = generarCodigo();
-      const { error } = await supabase.from("codigos_invitacion").insert({
-        codigo,
-        tipo: "fundador",
-        etiqueta: persona.etiqueta,
-        email: persona.email,
-        telefono: persona.telefono,
-        usos_maximos: 1,
-        creado_por: admin.id,
-      });
-      if (!error) insertado = true;
-      else if (!/duplicate|unique/i.test(error.message)) {
-        return {
-          error: `No pudimos crear el código para ${persona.etiqueta} (${error.message}).`,
-          creados,
-        };
-      }
-    }
-    if (!insertado) return { error: "No pudimos generar un código único. Intenta de nuevo.", creados };
-
-    const enlace = enlaceInvitacion(siteUrl, codigo);
-    let correo: CodigoCreado["correo"] = persona.email ? "omitido" : "sin_email";
-    if (enviar && persona.email) {
-      const envio = await sendEmail({
-        to: persona.email,
-        subject: "Tu invitación a SwapFairways",
-        html: invitacionEmailHtml({
-          nombre: persona.etiqueta,
-          codigo,
-          enlace,
-          remitente: CONTACT_EMAIL,
-        }),
-      });
-      correo = envio.ok ? "enviado" : "omitido";
-    }
-    creados.push({
-      codigo,
-      etiqueta: persona.etiqueta,
-      email: persona.email,
-      telefono: persona.telefono,
-      enlace,
-      correo,
-    });
+    const res = await crearCodigoFundador(supabase, { adminId: admin.id, siteUrl, persona, enviar });
+    if ("error" in res) return { error: res.error, creados };
+    creados.push(res.creado);
   }
 
   revalidatePath("/admin/invitaciones");

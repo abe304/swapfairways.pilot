@@ -68,6 +68,21 @@ export type CodigoInvitacion = {
   created_at: string;
 }
 
+export type ListaEsperaEstado = "pendiente" | "invitado" | "descartado";
+
+export type ListaEspera = {
+  id: string;
+  nombre: string;
+  email: string;
+  telefono: string | null;
+  club: string | null;
+  mensaje: string | null;
+  estado: ListaEsperaEstado;
+  codigo: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type AppSetting = {
   key: string;
   value: string;
@@ -235,6 +250,12 @@ export interface Database {
           },
         ];
       };
+      lista_espera: {
+        Row: ListaEspera;
+        Insert: Partial<ListaEspera> & { nombre: string; email: string };
+        Update: Partial<ListaEspera>;
+        Relationships: [];
+      };
       app_settings: {
         Row: AppSetting;
         Insert: Partial<AppSetting> & { key: string; value: string };
@@ -381,6 +402,16 @@ export interface Database {
       validar_codigo_invitacion: {
         Args: { p_codigo: string };
         Returns: { valido: boolean; invitador: string | null }[];
+      };
+      solicitar_invitacion: {
+        Args: {
+          p_nombre: string;
+          p_email: string;
+          p_telefono?: string | null;
+          p_club?: string | null;
+          p_mensaje?: string | null;
+        };
+        Returns: "nuevo" | "actualizado" | "ya_registrado";
       };
       admin_listar_usuarios: {
         Args: Record<string, never>;

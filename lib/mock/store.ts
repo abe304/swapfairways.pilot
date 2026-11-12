@@ -15,7 +15,8 @@ export type MockTable =
   | "reviews"
   | "codigos_invitacion"
   | "app_settings"
-  | "club_documentos";
+  | "club_documentos"
+  | "lista_espera";
 
 export type MockAuthUser = { id: string; email: string; password: string };
 
@@ -226,6 +227,7 @@ function buildInitialStore(): Store {
       { key: "recompensa_referido", value: "1", updated_at: nowIso() },
     ],
     club_documentos: [],
+    lista_espera: [],
     credit_transactions: [
       {
         id: uid("tx"),

@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { crearCodigosFundadores, type CodigoCreado } from "./actions";
+import { crearCodigosFundadores } from "./actions";
+import type { CodigoCreado } from "@/lib/fundadores";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { FormField, Textarea } from "@/components/ui/Field";

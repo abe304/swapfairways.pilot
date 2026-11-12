@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { RegistroForm } from "./RegistroForm";
+import { RegistroCerrado } from "./RegistroCerrado";
 import { createClient } from "@/lib/supabase/server";
 import { normalizarCodigo } from "@/lib/invites";
 import { CONTACT_EMAIL } from "@/lib/site";
@@ -30,13 +31,23 @@ export default async function RegistroPage({
     else codigoInvalido = true;
   }
 
+  // Solo por invitación y sin un código válido en el enlace: lista de espera.
+  const listaEspera = requerido && (!codigo || codigoInvalido);
+  let clubes: string[] = [];
+  if (listaEspera) {
+    const { data } = await supabase.from("clubs").select("nombre").order("nombre");
+    clubes = (data ?? []).map((c) => c.nombre);
+  }
+
   return (
     <div className="mx-auto flex min-h-[70vh] max-w-sm flex-col justify-center">
       <h1 className="mb-1 text-2xl font-semibold text-swf-verde">Únete a SwapFairways</h1>
       <p className="mb-6 text-sm text-swf-verde/70">
-        {requerido
-          ? "El acceso es por invitación. Ingresa el código que te compartió un socio."
-          : "Crea tu cuenta y recibe créditos de bienvenida para empezar a intercambiar rondas."}
+        {listaEspera
+          ? "Por ahora SwapFairways es solo por invitación. Déjanos tus datos y te mandaremos tu código en cuanto se abra un lugar."
+          : requerido
+            ? "El acceso es por invitación. Ingresa el código que te compartió un socio."
+            : "Crea tu cuenta y recibe créditos de bienvenida para empezar a intercambiar rondas."}
       </p>
       {codigo && invitador ? (
         <p className="mb-4 rounded-md bg-swf-dorado/15 px-3 py-2 text-sm text-swf-verde">
@@ -52,7 +63,11 @@ export default async function RegistroPage({
           Ese código de invitación no es válido o ya se usó.
         </p>
       ) : null}
-      <RegistroForm codigoInicial={codigo} codigoRequerido={requerido} />
+      {listaEspera ? (
+        <RegistroCerrado clubes={clubes} />
+      ) : (
+        <RegistroForm codigoInicial={codigo} codigoRequerido={requerido} />
+      )}
       <p className="mt-6 text-center text-sm text-swf-verde/70">
         ¿Ya tienes cuenta?{" "}
         <Link href="/login" className="font-medium text-swf-dorado">

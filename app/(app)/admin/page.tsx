@@ -7,13 +7,14 @@ export default async function AdminPage() {
   await requireAdmin();
   const supabase = await createClient();
 
-  const [{ data: clubs }, { data: docs }, { data: perfiles }, { data: codigos }, { data: ajuste }] =
+  const [{ data: clubs }, { data: docs }, { data: perfiles }, { data: codigos }, { data: ajuste }, { data: espera }] =
     await Promise.all([
       supabase.from("clubs").select("id, foto_url"),
       supabase.from("club_documentos").select("club_id"),
       supabase.from("profiles").select("id, invitado_por, referido_pagado"),
       supabase.from("codigos_invitacion").select("codigo, usos, usos_maximos, activo").eq("tipo", "fundador"),
       supabase.from("app_settings").select("value").eq("key", "invite_required").maybeSingle(),
+      supabase.from("lista_espera").select("estado"),
     ]);
 
   const clubsConDocs = new Set((docs ?? []).map((d) => d.club_id)).size;
@@ -33,6 +34,11 @@ export default async function AdminPage() {
       href: "/admin/usuarios",
       titulo: "Usuarios registrados",
       detalle: `${perfiles?.length ?? 0} usuarios · nombre, correo, club, créditos y actividad · descargable a Excel`,
+    },
+    {
+      href: "/admin/lista-espera",
+      titulo: "Lista de espera",
+      detalle: `${(espera ?? []).filter((e) => e.estado === "pendiente").length} pendientes · ${(espera ?? []).filter((e) => e.estado === "invitado").length} ya invitados · quienes pidieron entrar sin código`,
     },
     {
       href: "/admin/invitaciones",
