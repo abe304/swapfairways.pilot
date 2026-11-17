@@ -10,7 +10,8 @@
     "seed": "tsx scripts/seed.ts",
     "simulate": "tsx scripts/simulate-e2e.ts",
     "simulate:live": "tsx scripts/simulate-e2e.ts --live",
-    "audit:clubs": "tsx scripts/audit-club-locations.ts"
+    "audit:clubs": "tsx scripts/audit-club-locations.ts",
+    "export:marca": "tsx scripts/export-marca.tsx"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
