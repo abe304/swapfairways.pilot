@@ -35,6 +35,29 @@ async function subirArchivo(clubId: string, file: File) {
   return { url: data.publicUrl, path };
 }
 
+// Las fotos del celular suelen pesar varios MB (y en iPhone pueden venir en
+// HEIC). Se reducen a JPEG de máximo 1600 px antes de subirlas: cargan rápido
+// en la página y se ven en cualquier navegador. Si el navegador no puede
+// leer la imagen, se sube tal cual.
+async function prepararFoto(file: File): Promise<File> {
+  const LADO_MAX = 1600;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const escala = Math.min(1, LADO_MAX / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * escala);
+    canvas.height = Math.round(bitmap.height * escala);
+    canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.85));
+    if (!blob) return file;
+    const base = file.name.replace(/\.[^.]+$/, "") || "foto";
+    return new File([blob], `${base}.jpg`, { type: "image/jpeg" });
+  } catch {
+    return file;
+  }
+}
+
 export function ArchivosClub({
   clubId,
   nombre,
@@ -51,6 +74,7 @@ export function ArchivosClub({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [mensaje, setMensaje] = useState<{ tipo: "ok" | "error"; texto: string } | null>(null);
+  const [fotoEstado, setFotoEstado] = useState<{ tipo: "ok" | "error" | "info"; texto: string } | null>(null);
   const fotoRef = useRef<HTMLInputElement>(null);
   const archivoRef = useRef<HTMLInputElement>(null);
   const [tipo, setTipo] = useState<ClubDocumentoTipo>("estatutos");
@@ -62,14 +86,38 @@ export function ArchivosClub({
     if (!res.error) router.refresh();
   }
 
-  function subirFoto() {
-    const file = fotoRef.current?.files?.[0];
+  // Al elegir la foto se sube de inmediato (no hay un segundo paso).
+  function subirFoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
+    if (!file.type.startsWith("image/") && !/\.(heic|heif)$/i.test(file.name)) {
+      setFotoEstado({ tipo: "error", texto: "Ese archivo no es una imagen." });
+      return;
+    }
+    setFotoEstado({ tipo: "info", texto: "Subiendo foto..." });
     startTransition(async () => {
-      const subida = await subirArchivo(clubId, file);
-      if ("error" in subida) return avisar({ error: subida.error });
-      avisar(await guardarFoto(clubId, subida.url));
-      if (fotoRef.current) fotoRef.current.value = "";
+      try {
+        const lista = await prepararFoto(file);
+        const subida = await subirArchivo(clubId, lista);
+        if (subida.error || !subida.url) {
+          setFotoEstado({ tipo: "error", texto: subida.error ?? "No se pudo subir la foto." });
+          return;
+        }
+        const res = await guardarFoto(clubId, subida.url);
+        if (res.error) {
+          setFotoEstado({ tipo: "error", texto: res.error });
+          return;
+        }
+        setFotoEstado({ tipo: "ok", texto: "Foto actualizada." });
+        router.refresh();
+      } catch (err) {
+        console.error("[foto] error al subir:", err);
+        setFotoEstado({
+          tipo: "error",
+          texto: "No se pudo subir la foto. Revisa tu conexión e inténtalo de nuevo.",
+        });
+      }
     });
   }
 
@@ -118,12 +166,34 @@ export function ArchivosClub({
                 ref={fotoRef}
                 type="file"
                 accept="image/*"
-                aria-label="Subir foto del club"
-                className="block text-sm text-swf-verde"
+                aria-label="Elegir foto del club"
+                className="sr-only"
+                tabIndex={-1}
+                onChange={subirFoto}
               />
-              <Button type="button" variant="secondary" disabled={pending} onClick={subirFoto}>
-                {pending ? "Subiendo..." : "Subir foto"}
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={pending}
+                onClick={() => fotoRef.current?.click()}
+              >
+                {pending && fotoEstado?.tipo === "info" ? "Subiendo..." : fotoUrl ? "Cambiar foto" : "Subir foto"}
               </Button>
+              <p className="text-xs text-swf-verde/50">JPG, PNG o foto del celular. Se ajusta sola al tamaño.</p>
+              {fotoEstado ? (
+                <p
+                  role="status"
+                  className={
+                    fotoEstado.tipo === "error"
+                      ? "text-sm text-red-700"
+                      : fotoEstado.tipo === "ok"
+                        ? "text-sm text-green-800"
+                        : "text-sm text-swf-verde/70"
+                  }
+                >
+                  {fotoEstado.texto}
+                </p>
+              ) : null}
             </div>
           ) : (
             <p className="max-w-sm text-sm text-swf-verde/60">
