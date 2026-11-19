@@ -7,18 +7,21 @@ Piloto web para que socios de clubes de golf en México intercambien salidas (te
 
 ## Stack y dónde vive
 - Next.js 16 (App Router) + TypeScript + Tailwind v4. **Esta versión de Next tiene cambios incompatibles con lo que Claude sabe**: lee `node_modules/next/dist/docs/` antes de escribir código nuevo (ver `AGENTS.md`).
-- Supabase (Postgres, Auth email+contraseña, RLS, Storage). Las migraciones están en `supabase/migrations/` (0001–0019) y **se corren a mano** en el SQL Editor de Supabase.
+- Supabase (Postgres, Auth email+contraseña, RLS, Storage). Las migraciones están en `supabase/migrations/` (0001–0021) y **se corren a mano** en el SQL Editor de Supabase.
 - Despliegue en Vercel: https://swapfairways-pilot.vercel.app
 - Repo: github.com/abe304/swapfairways.pilot (rama `master`).
 - Modo demo: si falta `NEXT_PUBLIC_SUPABASE_URL` (o es un placeholder), la app usa un backend simulado en `lib/mock/*`. Usuario demo: `test@test.com` / `testtest`.
 
 ## Estado actual
-- Migraciones corridas en la base real: **hasta la 0019** (2026-11-18). La 0018 es el ajuste de niveles del 2026-11-12: 14 clubes suben a Premium, Cuernavaca y Hacienda San Gaspar bajan a Silver; reaplica nivel, acceso y tipo de todo el catálogo. La 0019 agrega 6 clubes: Oleada, Los Cedros, Erandeni, Nueve Almas, Punta Brava y PGA Riviera Maya; el catálogo queda en 249; además Atlas, Bosque Real, Los Encinos y Guadalajara CC pasan a green fee y Tapalpa a abierto/Silver. La `0014_invitaciones_telefono.sql` agrega `telefono` a `codigos_invitacion`; la `0015_admin_usuarios.sql` da la lista de usuarios en `/admin/usuarios`.
+- Migraciones corridas en la base real: **hasta la 0021** (2026-11-19). La 0020 exige haber publicado una ronda propia antes de solicitar; la 0021 activa los 3 créditos de bienvenida al publicar la primera oferta. La 0018 es el ajuste de niveles del 2026-11-12: 14 clubes suben a Premium, Cuernavaca y Hacienda San Gaspar bajan a Silver; reaplica nivel, acceso y tipo de todo el catálogo. La 0019 agrega 6 clubes: Oleada, Los Cedros, Erandeni, Nueve Almas, Punta Brava y PGA Riviera Maya; el catálogo queda en 249; además Atlas, Bosque Real, Los Encinos y Guadalajara CC pasan a green fee y Tapalpa a abierto/Silver. La `0014_invitaciones_telefono.sql` agrega `telefono` a `codigos_invitacion`; la `0015_admin_usuarios.sql` da la lista de usuarios en `/admin/usuarios`.
 - Datos de prueba borrados el 2026-11-11 con `supabase/scripts/limpieza_*.sql`: solo quedan Abraham, Iván y Druso, sin rondas.
 - Funciones hechas: home pública con buscador, directorio de 254 clubes con estados corregidos, ofertas con varias fechas y pases por fecha, costos desglosados (carrito y caddie compartidos se dividen a la mitad para el invitado), solicitudes/aprobación, créditos, códigos de invitación (usuario y fundador) con recompensa por referido, panel `/admin` (clubes, documentos, invitaciones), candado de seguridad sobre `profiles`.
 - **Código en GitHub y Vercel:** el commit `22f8657` (home, invitaciones, admin, migraciones 0012/0013) se subió el 2026-11-09 y Vercel lo desplegó en producción. El push se hace con `gh` autenticado (`gh auth login`).
 - **Niveles de club (nov 2026):** cada club tiene `nivel` (premium 3 créditos / gold 2 / silver 1) y `acceso` (pase / green_fee / abierto). En clubes green_fee o abiertos cada oferta dice quién paga el green fee (`green_fee_paga`): si lo paga el invitado cuesta 1 crédito. La evaluación revisada está en `docs/evaluacion-clubes.xlsx` (y en Google Drive); el mapa por club en `lib/data/clubs-niveles.ts`; reglas en `lib/niveles.ts`. Migración 0016 corrida y desplegada (commit `5d667b2`).
 - `invite_required` está en `false` (registro abierto) hasta repartir los códigos de fundador. Al activarlo, quien entra a `/registro` sin código ve que es solo por invitación y deja sus datos (`lista_espera`, migración 0017); el admin los ve en `/admin/lista-espera` y les crea el código con un clic (correo + botón de WhatsApp). La lógica compartida para crear códigos de fundador está en `lib/fundadores.ts`.
+
+- **Créditos de bienvenida (migración 0021, corrida el 2026-11-19):** los 3 créditos ya no se dan al registrarse; se activan al publicar la primera oferta (trigger en `tee_time_offers`). Quien ya los tenía los conserva.
+- **Correos de ciclo de vida:** mapa y textos en `docs/correos-ciclo-de-vida.md` (firmados por Abraham, respuestas al correo). Aún no programados.
 
 ## Pendientes de lanzamiento (los hace el dueño; detalle en `docs/LANZAMIENTO.md`)
 1. ~~Subir el código a GitHub y confirmar que Vercel despliegue.~~ Hecho (2026-11-09).

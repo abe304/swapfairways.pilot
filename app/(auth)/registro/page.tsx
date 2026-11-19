@@ -47,7 +47,7 @@ export default async function RegistroPage({
           ? "Por ahora SwapFairways es solo por invitación. Déjanos tus datos y te mandaremos tu código en cuanto se abra un lugar."
           : requerido
             ? "El acceso es por invitación. Ingresa el código que te compartió un socio."
-            : "Crea tu cuenta y recibe créditos de bienvenida para empezar a intercambiar rondas."}
+            : "Crea tu cuenta y publica tu primera oferta: al hacerlo recibes 3 créditos de bienvenida para jugar en otros clubes."}
       </p>
       {codigo && invitador ? (
         <p className="mb-4 rounded-md bg-swf-dorado/15 px-3 py-2 text-sm text-swf-verde">

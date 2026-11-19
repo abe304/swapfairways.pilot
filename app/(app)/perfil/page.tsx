@@ -34,8 +34,8 @@ export default async function PerfilPage({
       {bienvenida ? (
         <Card className="mb-6 border-swf-dorado bg-swf-dorado/10">
           <p className="text-sm text-swf-verde">
-            ¡Bienvenido a SwapFairways! Ya recibiste tus créditos de bienvenida. Completa
-            tu perfil para empezar a explorar y anfitrionar rondas.
+            ¡Bienvenido a SwapFairways! Completa tu perfil y publica tu primera oferta:
+            al hacerlo se activan tus 3 créditos de bienvenida para jugar en otros clubes.
           </p>
         </Card>
       ) : null}

@@ -89,15 +89,8 @@ export async function createMockClient() {
           creado_por: null,
           created_at: nowIso(),
         });
-        applyCreditTx({
-          id: uid("tx"),
-          user_id: id,
-          tipo: "bienvenida",
-          monto: 3,
-          referencia: null,
-          nota: "Crédito de bienvenida al registrarte en SWF",
-          created_at: nowIso(),
-        });
+        // Los créditos de bienvenida se activan al publicar la primera
+        // oferta (ver lib/mock/query.ts y la migración 0021).
         cookieStore.set(MOCK_SESSION_COOKIE, id, { path: "/" });
         return { error: null };
       },

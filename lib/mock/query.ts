@@ -1,4 +1,4 @@
-import { store, uid, nowIso, type MockRow, type MockTable } from "./store";
+import { store, uid, nowIso, applyCreditTx, type MockRow, type MockTable } from "./store";
 
 type SelectField =
   | { kind: "all" }
@@ -272,6 +272,25 @@ export class MockQueryBuilder implements PromiseLike<MockResult<unknown>> {
         table.push(row);
         return row;
       });
+      if (this.table === "tee_time_offers") {
+        // Igual que el trigger bienvenida_primera_oferta (migración 0021).
+        for (const hostId of new Set(inserted.map((r) => r.host_id as string))) {
+          const yaTiene = store.credit_transactions.some(
+            (t) => t.user_id === hostId && t.tipo === "bienvenida",
+          );
+          if (!yaTiene) {
+            applyCreditTx({
+              id: uid("tx"),
+              user_id: hostId,
+              tipo: "bienvenida",
+              monto: 3,
+              referencia: null,
+              nota: "Créditos de bienvenida por publicar tu primera oferta",
+              created_at: nowIso(),
+            });
+          }
+        }
+      }
       return this.finish(inserted);
     }
 
