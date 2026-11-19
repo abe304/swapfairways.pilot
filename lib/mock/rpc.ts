@@ -20,6 +20,11 @@ export function create_join_request(currentUserId: string, args: { p_offer_id: s
   if (offer.host_id === currentUserId) {
     return { error: "No puedes solicitar unirte a tu propia oferta" };
   }
+  // Regla 0020: primero hay que publicar una ronda propia (activa o cerrada).
+  const yaPublico = store.tee_time_offers.some(
+    (o) => o.host_id === currentUserId && ["activa", "cerrada"].includes(o.estado as string),
+  );
+  if (!yaPublico) return { error: "Para usar tus créditos primero publica una ronda en tu club." };
   if (offer.estado !== "activa") return { error: "Esta oferta ya no está activa" };
   if ((offer.pases_confirmados as number) >= (offer.pases_disponibles as number)) {
     return { error: "No quedan pases disponibles en esta oferta" };

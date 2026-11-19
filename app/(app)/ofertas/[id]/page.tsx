@@ -54,6 +54,14 @@ export default async function OfertaDetallePage({
 
   if (!offer) notFound();
 
+  // Regla 0020: para usar créditos primero hay que publicar una ronda propia.
+  const { data: propias } = await supabase
+    .from("tee_time_offers")
+    .select("id")
+    .eq("host_id", profile.id)
+    .in("estado", ["activa", "cerrada"]);
+  const yaPublico = (propias?.length ?? 0) > 0;
+
   const club = (offer as unknown as { clubs: OfferClub | null }).clubs;
   const host = (
     offer as unknown as {
@@ -313,6 +321,19 @@ export default async function OfertaDetallePage({
           <p className="text-sm font-medium text-swf-verde">
             {ESTADO_LABEL[myRequest.estado]}
           </p>
+        ) : cuposLibres > 0 && offer.estado === "activa" && !yaPublico ? (
+          <div className="rounded-md bg-swf-dorado/15 px-4 py-3 text-sm text-swf-verde">
+            <p className="font-medium">Primero publica una ronda en tu club</p>
+            <p className="mt-1 text-swf-verde/70">
+              Para usar tus créditos en otros campos necesitas haber anfitrionado: publica una salida en
+              tu club y después podrás solicitar esta.
+            </p>
+            <div className="mt-3">
+              <LinkButton href="/ofertas/nueva" variant="secondary">
+                Publicar una ronda
+              </LinkButton>
+            </div>
+          </div>
         ) : cuposLibres > 0 && offer.estado === "activa" ? (
           <RequestButton offerId={offer.id} costoCreditos={costoCreditos} />
         ) : (

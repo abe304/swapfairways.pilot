@@ -37,7 +37,7 @@ const PASOS = [
     n: "2",
     titulo: "Solicita jugar en otro club",
     texto:
-      "Explora los campos de la red, mira reglamentos y costos, y pide unirte a la ronda de un socio.",
+      "Con tu primera ronda publicada se activan tus créditos: explora los campos de la red, mira reglamentos y costos, y pide unirte a la ronda de un socio.",
   },
   {
     n: "3",
