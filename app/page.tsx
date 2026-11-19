@@ -239,7 +239,8 @@ export default async function Home() {
             ))}
           </div>
 
-          <div className="mt-8">
+          {/* id="video": los correos de bienvenida enlazan aquí. */}
+          <div id="video" className="mt-8 scroll-mt-6">
             <p className="mb-3 text-sm font-medium text-swf-verde/70">Míralo en 40 segundos</p>
             <video
               className="aspect-video w-full rounded-2xl bg-swf-verde shadow-sm ring-1 ring-swf-verde/10"

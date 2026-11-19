@@ -1,0 +1,385 @@
+// Envío de los correos de ciclo de vida. Ver docs/correos-ciclo-de-vida.md.
+//
+// * T1 y T2 se mandan en el momento (registro y primera oferta).
+// * T4, T7 y T8 los manda revisionDiaria(), que corre una vez al día desde
+//   /api/cron/correos (Vercel Cron).
+//
+// Cada correo se registra en correos_enviados (migración 0022) ANTES de
+// mandarlo: si ya estaba registrado no se repite. Si el envío falla, se
+// borra el registro para que se intente de nuevo en la siguiente revisión.
+// Todo es best-effort: un error aquí nunca debe romper la acción del socio.
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/supabase/types";
+import { MOCK_MODE } from "@/lib/mock/is-mock";
+import { createClient } from "@/lib/supabase/server";
+import { sendEmail } from "@/lib/email";
+import { formatFecha, formatHora } from "@/lib/utils";
+import {
+  t1Bienvenida,
+  t2CreditosActivados,
+  t4SolicitudSinRespuesta,
+  t7RondaManana,
+  t8MarcarJugada,
+  t8Resena,
+  type Correo,
+} from "./plantillas";
+
+const REMITENTE = "Abraham de SwapFairways";
+const DIA_MS = 24 * 60 * 60 * 1000;
+
+type Db = SupabaseClient<Database>;
+export type TipoCorreo = "T1" | "T2" | "T4" | "T7" | "T8";
+
+// Cliente que puede leer todo (service role). En modo demo, el simulado.
+async function db(): Promise<Db> {
+  if (MOCK_MODE) return (await createClient()) as unknown as Db;
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  return createAdminClient();
+}
+
+async function emailDe(userId: string): Promise<string | null> {
+  if (MOCK_MODE) {
+    const { store } = await import("@/lib/mock/store");
+    return store.authUsers.find((u) => u.id === userId)?.email ?? null;
+  }
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const { data } = await createAdminClient().auth.admin.getUserById(userId);
+  return data?.user?.email ?? null;
+}
+
+// En modo demo el registro vive en memoria (no hay tabla).
+const registroDemo: Set<string> =
+  ((globalThis as Record<string, unknown>).__swfCorreosDemo as Set<string>) ??
+  ((globalThis as Record<string, unknown>).__swfCorreosDemo = new Set<string>());
+
+async function apartar(cliente: Db, userId: string, tipo: TipoCorreo, referencia: string) {
+  if (MOCK_MODE) {
+    const llave = `${userId}|${tipo}|${referencia}`;
+    if (registroDemo.has(llave)) return false;
+    registroDemo.add(llave);
+    return true;
+  }
+  const { error } = await cliente
+    .from("correos_enviados")
+    .insert({ user_id: userId, tipo, referencia });
+  if (!error) return true;
+  // 23505 = ya existía: ese correo ya se mandó. Cualquier otro error (p. ej.
+  // la tabla no existe todavía) también detiene el envío: mejor no mandar
+  // que mandar el mismo correo todos los días.
+  if (error.code !== "23505") console.error("[correos] No se pudo registrar el envío:", error);
+  return false;
+}
+
+async function liberar(cliente: Db, userId: string, tipo: TipoCorreo, referencia: string) {
+  if (MOCK_MODE) {
+    registroDemo.delete(`${userId}|${tipo}|${referencia}`);
+    return;
+  }
+  await cliente
+    .from("correos_enviados")
+    .delete()
+    .eq("user_id", userId)
+    .eq("tipo", tipo)
+    .eq("referencia", referencia);
+}
+
+export type ResultadoEnvio = "enviado" | "ya_enviado" | "sin_correo" | "fallo";
+
+async function enviarUnaVez(
+  cliente: Db,
+  args: { userId: string; tipo: TipoCorreo; referencia?: string; correo: Correo; to?: string },
+): Promise<ResultadoEnvio> {
+  const referencia = args.referencia ?? "";
+  if (!(await apartar(cliente, args.userId, args.tipo, referencia))) return "ya_enviado";
+
+  const to = args.to ?? (await emailDe(args.userId));
+  if (!to) {
+    await liberar(cliente, args.userId, args.tipo, referencia);
+    return "sin_correo";
+  }
+
+  const res = await sendEmail({ to, ...args.correo, fromName: REMITENTE });
+  if (!res.ok) {
+    await liberar(cliente, args.userId, args.tipo, referencia);
+    return "fallo";
+  }
+  return "enviado";
+}
+
+// "Hoy" en el centro de México (UTC-6 todo el año), como en ofertas/actions.
+function fechaMexico(desplazamientoDias = 0) {
+  return new Date(Date.now() - 6 * 60 * 60 * 1000 + desplazamientoDias * DIA_MS)
+    .toISOString()
+    .slice(0, 10);
+}
+
+function fechaLabel(o: { fecha: string | null; hora: string | null; fecha_flexible: boolean }) {
+  if (o.fecha_flexible || !o.fecha) return "fecha a coordinar";
+  return o.hora ? `${formatFecha(o.fecha)} · ${formatHora(o.hora)}` : formatFecha(o.fecha);
+}
+
+// ============================================================
+// T1 · Bienvenida (al registrarse)
+// ============================================================
+export async function enviarBienvenida(params: {
+  userId: string;
+  nombre: string;
+  email: string;
+  sitio: string;
+}) {
+  const cliente = await db();
+  return enviarUnaVez(cliente, {
+    userId: params.userId,
+    tipo: "T1",
+    to: params.email,
+    // Al registrarse todavía no hay club en el perfil.
+    correo: t1Bienvenida({ nombre: params.nombre, sitio: params.sitio, clubNombre: null }),
+  });
+}
+
+// ============================================================
+// T2 · Créditos activados (al publicar la primera oferta)
+// ============================================================
+// Solo se manda si el trigger de la 0021 acaba de dar el bono: así no le
+// llega a quien ya tenía sus créditos desde antes.
+export async function enviarCreditosActivados(params: {
+  userId: string;
+  nombre: string;
+  sitio: string;
+  clubId: string;
+  ofertas: Array<{ fecha: string | null; hora: string | null; fecha_flexible: boolean }>;
+}) {
+  const cliente = await db();
+
+  const { data: bonos } = await cliente
+    .from("credit_transactions")
+    .select("created_at")
+    .eq("user_id", params.userId)
+    .eq("tipo", "bienvenida");
+  const recien = (bonos ?? []).some(
+    (b) => Date.now() - new Date(b.created_at as string).getTime() < 10 * 60 * 1000,
+  );
+  if (!recien) return "ya_enviado" as const;
+
+  const { data: club } = await cliente
+    .from("clubs")
+    .select("nombre")
+    .eq("id", params.clubId)
+    .maybeSingle();
+
+  const hoy = fechaMexico();
+  const { data: activas } = await cliente
+    .from("tee_time_offers")
+    .select("host_id, fecha, fecha_flexible")
+    .eq("estado", "activa");
+  const ofertasAbiertas = (activas ?? []).filter(
+    (o) => o.host_id !== params.userId && (o.fecha_flexible || (o.fecha ?? "") >= hoy),
+  ).length;
+
+  const [primera, ...resto] = params.ofertas;
+  const label =
+    fechaLabel(primera) +
+    (resto.length ? ` (y ${resto.length} ${resto.length === 1 ? "fecha más" : "fechas más"})` : "");
+
+  return enviarUnaVez(cliente, {
+    userId: params.userId,
+    tipo: "T2",
+    correo: t2CreditosActivados({
+      nombre: params.nombre,
+      sitio: params.sitio,
+      clubNombre: club?.nombre ?? "tu club",
+      fechaLabel: label,
+      ofertasAbiertas,
+    }),
+  });
+}
+
+// ============================================================
+// Revisión diaria: T4, T7 y T8
+// ============================================================
+type Fila = Record<string, unknown>;
+
+export async function revisionDiaria(sitio: string) {
+  const cliente = await db();
+  const hoy = fechaMexico();
+  const manana = fechaMexico(1);
+  const ayer = fechaMexico(-1);
+  const haceTres = fechaMexico(-3);
+  const ahora = Date.now();
+
+  const { data: solicitudesRaw, error } = await cliente
+    .from("requests")
+    .select("id, offer_id, guest_id, estado, creditos_cobrados, created_at, jugado_at")
+    .in("estado", ["pendiente", "aprobado", "jugado"]);
+  if (error) throw new Error(`No se pudieron leer las solicitudes: ${error.message}`);
+  const solicitudes = (solicitudesRaw ?? []) as Fila[];
+
+  const resumen: Record<string, Record<ResultadoEnvio, number>> = {};
+  const contar = (tipo: string, r: ResultadoEnvio) => {
+    resumen[tipo] ??= { enviado: 0, ya_enviado: 0, sin_correo: 0, fallo: 0 };
+    resumen[tipo][r] += 1;
+  };
+
+  if (solicitudes.length === 0) return { hoy, resumen };
+
+  const offerIds = [...new Set(solicitudes.map((s) => s.offer_id as string))];
+  const { data: ofertasRaw } = await cliente
+    .from("tee_time_offers")
+    .select("id, host_id, club_id, fecha, hora, fecha_flexible, estado, costo_estimado")
+    .in("id", offerIds);
+  const ofertas = new Map(((ofertasRaw ?? []) as Fila[]).map((o) => [o.id as string, o]));
+
+  const clubIds = [...new Set([...ofertas.values()].map((o) => o.club_id as string))];
+  const { data: clubsRaw } = await cliente.from("clubs").select("id, nombre, ciudad").in("id", clubIds);
+  const clubs = new Map(((clubsRaw ?? []) as Fila[]).map((c) => [c.id as string, c]));
+
+  const userIds = [
+    ...new Set([
+      ...solicitudes.map((s) => s.guest_id as string),
+      ...[...ofertas.values()].map((o) => o.host_id as string),
+    ]),
+  ];
+  const { data: perfilesRaw } = await cliente.from("profiles").select("id, nombre").in("id", userIds);
+  const nombres = new Map(((perfilesRaw ?? []) as Fila[]).map((p) => [p.id as string, p.nombre as string]));
+  const nombre = (id: string) => nombres.get(id) ?? "un socio";
+
+  // Agrupa por oferta lo que le toca al anfitrión (un solo correo aunque
+  // tenga varios invitados).
+  const t7PorOferta = new Map<string, Fila[]>();
+  const t8PorOferta = new Map<string, Fila[]>();
+
+  for (const s of solicitudes) {
+    const o = ofertas.get(s.offer_id as string);
+    if (!o) continue;
+    const club = clubs.get(o.club_id as string);
+    const clubNombre = (club?.nombre as string) ?? "tu club";
+    const fecha = o.fecha as string | null;
+    const fija = !o.fecha_flexible && !!fecha;
+
+    // T4 · pendiente hace 48 h o más, y la ronda sigue vigente.
+    if (
+      s.estado === "pendiente" &&
+      ahora - new Date(s.created_at as string).getTime() >= 2 * DIA_MS &&
+      o.estado === "activa" &&
+      (!fija || (fecha as string) >= hoy)
+    ) {
+      const hostId = o.host_id as string;
+      contar(
+        "T4",
+        await enviarUnaVez(cliente, {
+          userId: hostId,
+          tipo: "T4",
+          referencia: s.id as string,
+          correo: t4SolicitudSinRespuesta({
+            nombre: nombre(hostId),
+            sitio,
+            invitado: nombre(s.guest_id as string),
+            clubNombre,
+            fechaLabel: fechaLabel(o as never),
+          }),
+        }),
+      );
+    }
+
+    // T7 · ronda aprobada mañana (solo fecha fija).
+    if (s.estado === "aprobado" && fija && fecha === manana) {
+      const lista = t7PorOferta.get(o.id as string) ?? [];
+      lista.push(s);
+      t7PorOferta.set(o.id as string, lista);
+    }
+
+    // T8 anfitrión · la ronda ya pasó (hasta 3 días) y sigue sin marcarse.
+    if (s.estado === "aprobado" && fija && (fecha as string) >= haceTres && (fecha as string) <= ayer) {
+      const lista = t8PorOferta.get(o.id as string) ?? [];
+      lista.push(s);
+      t8PorOferta.set(o.id as string, lista);
+    }
+
+    // T8 invitado · la ronda se marcó como jugada en los últimos 3 días.
+    if (
+      s.estado === "jugado" &&
+      s.jugado_at &&
+      ahora - new Date(s.jugado_at as string).getTime() <= 3 * DIA_MS
+    ) {
+      const guestId = s.guest_id as string;
+      contar(
+        "T8",
+        await enviarUnaVez(cliente, {
+          userId: guestId,
+          tipo: "T8",
+          referencia: s.id as string,
+          correo: t8Resena({
+            nombre: nombre(guestId),
+            sitio,
+            anfitrion: nombre(o.host_id as string),
+            clubNombre,
+            requestId: s.id as string,
+          }),
+        }),
+      );
+    }
+  }
+
+  for (const [offerId, lista] of t7PorOferta) {
+    const o = ofertas.get(offerId)!;
+    const club = clubs.get(o.club_id as string);
+    const hostId = o.host_id as string;
+    const base = {
+      sitio,
+      clubNombre: (club?.nombre as string) ?? "el club",
+      ciudad: (club?.ciudad as string | null) ?? null,
+      hora: o.hora ? formatHora(o.hora as string) : "la hora acordada",
+      costoInvitado: (o.costo_estimado as number | null) ?? null,
+      offerId,
+    };
+    contar(
+      "T7",
+      await enviarUnaVez(cliente, {
+        userId: hostId,
+        tipo: "T7",
+        referencia: offerId,
+        correo: t7RondaManana({
+          ...base,
+          nombre: nombre(hostId),
+          rol: "anfitrion",
+          otros: lista.map((s) => nombre(s.guest_id as string)),
+        }),
+      }),
+    );
+    for (const s of lista) {
+      const guestId = s.guest_id as string;
+      contar(
+        "T7",
+        await enviarUnaVez(cliente, {
+          userId: guestId,
+          tipo: "T7",
+          referencia: s.id as string,
+          correo: t7RondaManana({ ...base, nombre: nombre(guestId), rol: "invitado", otros: [nombre(hostId)] }),
+        }),
+      );
+    }
+  }
+
+  for (const [offerId, lista] of t8PorOferta) {
+    const o = ofertas.get(offerId)!;
+    const club = clubs.get(o.club_id as string);
+    const hostId = o.host_id as string;
+    contar(
+      "T8",
+      await enviarUnaVez(cliente, {
+        userId: hostId,
+        tipo: "T8",
+        referencia: offerId,
+        correo: t8MarcarJugada({
+          nombre: nombre(hostId),
+          sitio,
+          invitados: lista.map((s) => nombre(s.guest_id as string)),
+          clubNombre: (club?.nombre as string) ?? "tu club",
+          creditos: lista.reduce((t, s) => t + ((s.creditos_cobrados as number) ?? 1), 0),
+        }),
+      }),
+    );
+  }
+
+  return { hoy, resumen };
+}

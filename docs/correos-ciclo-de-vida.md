@@ -26,14 +26,14 @@ Versión 1 · 2026-11-19 · Para revisar antes de programar.
 
 | # | Correo | Cuándo | Condición / se cancela si… | Acción (botón) | Métrica | Estado |
 |---|---|---|---|---|---|---|
-| T1 | Bienvenida + video | Al registrarse | — | Publicar mi primera oferta | % que publica en 14 días | Nuevo |
-| T2 | Se activaron tus créditos | Al publicar la 1a oferta | Solo la primera vez | Ver clubes para jugar | % que solicita en 14 días | Nuevo |
+| T1 | Bienvenida + video | Al registrarse | — | Publicar mi primera oferta | % que publica en 14 días | **Programado** |
+| T2 | Se activaron tus créditos | Al publicar la 1a oferta | Solo la primera vez | Ver clubes para jugar | % que solicita en 14 días | **Programado** |
 | T3 | Nueva solicitud (al anfitrión) | Al solicitar | — | Revisar solicitud | Tiempo de respuesta | **Ya existe** |
-| T4 | Tienes una solicitud esperando | 48 h sin respuesta | Se cancela si aprueba o rechaza | Responder | % respondidas en 72 h | Nuevo |
+| T4 | Tienes una solicitud esperando | 48 h sin respuesta | Se cancela si aprueba o rechaza | Responder | % respondidas en 72 h | **Programado** |
 | T5 | Solicitud aprobada (al invitado) | Al aprobar | — | Agregar al calendario | — | **Ya existe** |
 | T6 | Solicitud no aprobada | Al rechazar | — | Ver otras ofertas | % que vuelve a solicitar | Nuevo |
-| T7 | Tu ronda es mañana | 24 h antes (a los dos) | Solo con fecha fija | Ver detalles | Rondas que no se cancelan | Nuevo |
-| T8 | ¿Cómo estuvo la ronda? | Día siguiente | Anfitrión: marcar jugada · los dos: reseña | Marcar jugada / Dejar reseña | % jugadas marcadas en 48 h | Nuevo |
+| T7 | Tu ronda es mañana | 24 h antes (a los dos) | Solo con fecha fija | Ver detalles | Rondas que no se cancelan | **Programado** |
+| T8 | ¿Cómo estuvo la ronda? | Día siguiente | Anfitrión: marcar jugada · los dos: reseña | Marcar jugada / Dejar reseña | % jugadas marcadas en 48 h | **Programado** |
 | T9 | Tu invitado jugó: ganaste créditos | Al pagar el referido | — | Invitar a otro socio | Referidos por socio | Nuevo |
 | S1 | Tu club es parte de la red | Día 7 sin ofertas | Se cancela si publica | Publicar oferta | % que publica después de S1 | Nuevo (tu punto 2) |
 | S2 | Gracias por recibir a tu primer invitado | 1a ronda jugada como anfitrión | Solo una vez | Responder con feedback | % que responde | Nuevo (tu punto 3) |
@@ -66,13 +66,13 @@ Las variables van entre `{llaves}`. Todos firman:
 
 ### T1 · Bienvenida
 **Asunto:** Bienvenido a SwapFairways, {nombre}
-**Preencabezado:** Así funciona en 2 minutos, y cómo activar tus 3 créditos.
+**Preencabezado:** Así funciona en 40 segundos, y cómo activar tus 3 créditos.
 
 Hola {nombre}:
 
 Gracias por unirte. SwapFairways es la red de socios de clubes de golf en México que se reciben entre sí: tú abres un lugar en tu club y, a cambio, juegas en el de otros.
 
-En este video de 2 minutos te explico cómo funciona: **[Ver el video]**
+En este video de 40 segundos te explico cómo funciona: *(portada del video con enlace a la sección del video en la home)* **[▶ Ver el video]**
 
 El primer paso es publicar una oferta en {club}: una fecha y cuántos lugares tienes. **Al publicarla se activan tus 3 créditos de bienvenida**, y con ellos ya puedes pedir lugar en otros clubes.
 
@@ -229,9 +229,14 @@ Una red así solo funciona si sus socios la usan, y quiero que valga la pena par
 
 ---
 
-## Lo que hace falta para programarlo (cuando se apruebe)
-- `reply_to` con el correo de Abraham en `lib/email.ts`; también ajustar `RESEND_FROM_EMAIL` para que diga "Abraham de SwapFairways".
-- **Tabla `correos_enviados`** (`user_id`, `tipo`, `referencia`, `enviado_at`, única por `user_id + tipo + referencia`) para no repetir correos.
-- **Tarea diaria (Vercel Cron)** para T4, T7, T8, S1 y S4. Los demás se mandan en el momento, desde las acciones que ya existen.
-- **Columna `profiles.correos_seguimiento`** (para darse de baja de los S). Hay que agregarla a las columnas que el usuario puede editar, con cuidado (ver el candado de la 0012).
-- **Video:** usar el enlace público a `/video/swf-explicativo.mp4`, o subirlo a YouTube para que se reproduzca mejor desde el correo.
+## Cómo está programado (T1, T2, T4, T7 y T8)
+- **Código:** las plantillas están en `lib/correos/plantillas.ts` (si cambias un texto aquí, cámbialo también allá) y la lógica de envío en `lib/correos/enviar.ts`.
+- **T1** sale desde el registro y **T2** desde "Publicar oferta". T2 solo se manda si el bono de la 0021 se acaba de dar, así que no le llega a quien ya tenía sus créditos.
+- **T4, T7 y T8** los manda `/api/cron/correos`, que Vercel Cron llama todos los días a las 8:00 am de CDMX (`vercel.json`). La ruta exige la variable `CRON_SECRET`.
+- **Antirrepetición:** la tabla `correos_enviados` (migración 0022) evita mandar dos veces el mismo correo. Si un envío falla, se reintenta en la siguiente revisión.
+- **Sin correos atrasados:** T8 solo cubre rondas de los últimos 3 días.
+- **Rondas con fecha flexible:** no reciben T7 ni T8.
+- **Remitente:** "Abraham de SwapFairways", con `reply_to` al correo de `NEXT_PUBLIC_CONTACT_EMAIL`.
+
+## Pendiente para los correos de seguimiento (S1–S4)
+- Columna `profiles.correos_seguimiento` para darse de baja. Hay que agregarla a las columnas que el usuario puede editar, con cuidado (ver el candado de la 0012).

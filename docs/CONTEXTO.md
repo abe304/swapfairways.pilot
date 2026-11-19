@@ -7,7 +7,7 @@ Piloto web para que socios de clubes de golf en México intercambien salidas (te
 
 ## Stack y dónde vive
 - Next.js 16 (App Router) + TypeScript + Tailwind v4. **Esta versión de Next tiene cambios incompatibles con lo que Claude sabe**: lee `node_modules/next/dist/docs/` antes de escribir código nuevo (ver `AGENTS.md`).
-- Supabase (Postgres, Auth email+contraseña, RLS, Storage). Las migraciones están en `supabase/migrations/` (0001–0021) y **se corren a mano** en el SQL Editor de Supabase.
+- Supabase (Postgres, Auth email+contraseña, RLS, Storage). Las migraciones están en `supabase/migrations/` (0001–0022) y **se corren a mano** en el SQL Editor de Supabase.
 - Despliegue en Vercel: https://swapfairways-pilot.vercel.app
 - Repo: github.com/abe304/swapfairways.pilot (rama `master`).
 - Modo demo: si falta `NEXT_PUBLIC_SUPABASE_URL` (o es un placeholder), la app usa un backend simulado en `lib/mock/*`. Usuario demo: `test@test.com` / `testtest`.
@@ -21,7 +21,7 @@ Piloto web para que socios de clubes de golf en México intercambien salidas (te
 - `invite_required` está en `false` (registro abierto) hasta repartir los códigos de fundador. Al activarlo, quien entra a `/registro` sin código ve que es solo por invitación y deja sus datos (`lista_espera`, migración 0017); el admin los ve en `/admin/lista-espera` y les crea el código con un clic (correo + botón de WhatsApp). La lógica compartida para crear códigos de fundador está en `lib/fundadores.ts`.
 
 - **Créditos de bienvenida (migración 0021, corrida el 2026-11-19):** los 3 créditos ya no se dan al registrarse; se activan al publicar la primera oferta (trigger en `tee_time_offers`). Quien ya los tenía los conserva.
-- **Correos de ciclo de vida:** mapa y textos en `docs/correos-ciclo-de-vida.md` (firmados por Abraham, respuestas al correo). Aún no programados.
+- **Correos de ciclo de vida:** mapa y textos en `docs/correos-ciclo-de-vida.md`. Programados (2026-11-19): T1 bienvenida, T2 créditos activados, T4 solicitud sin respuesta, T7 ronda mañana y T8 después de la ronda (`lib/correos/`, `/api/cron/correos`, Vercel Cron diario a las 8:00 de CDMX). Requieren la migración 0022 (`correos_enviados`) y la variable `CRON_SECRET` en Vercel. Faltan S1–S4.
 
 ## Pendientes de lanzamiento (los hace el dueño; detalle en `docs/LANZAMIENTO.md`)
 1. ~~Subir el código a GitHub y confirmar que Vercel despliegue.~~ Hecho (2026-11-09).

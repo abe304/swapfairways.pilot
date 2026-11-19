@@ -6,14 +6,26 @@
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "SwapFairways <onboarding@resend.dev>";
 
+// Las respuestas llegan al correo de contacto (NEXT_PUBLIC_CONTACT_EMAIL).
+const REPLY_TO = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || undefined;
+
+// Cambia el nombre que se ve en el remitente sin cambiar la dirección:
+// "SwapFairways <hola@x.com>" -> "Abraham de SwapFairways <hola@x.com>".
+function conNombre(from: string, nombre: string) {
+  const direccion = from.match(/<([^>]+)>/)?.[1] ?? from.trim();
+  return `${nombre} <${direccion}>`;
+}
+
 export async function sendEmail({
   to,
   subject,
   html,
+  fromName,
 }: {
   to: string;
   subject: string;
   html: string;
+  fromName?: string;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!RESEND_API_KEY) {
     console.log(`[email] RESEND_API_KEY no configurada, se omite: "${subject}" a ${to}`);
@@ -27,7 +39,13 @@ export async function sendEmail({
         Authorization: `Bearer ${RESEND_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ from: FROM_EMAIL, to, subject, html }),
+      body: JSON.stringify({
+        from: fromName ? conNombre(FROM_EMAIL, fromName) : FROM_EMAIL,
+        to,
+        subject,
+        html,
+        ...(REPLY_TO ? { reply_to: REPLY_TO } : {}),
+      }),
     });
     if (!res.ok) {
       const detalle = await res.text();
@@ -45,7 +63,7 @@ export async function sendEmail({
   }
 }
 
-function escapeHtml(texto: string) {
+export function escapeHtml(texto: string) {
   return texto
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")

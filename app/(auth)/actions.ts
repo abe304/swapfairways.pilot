@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { normalizarCodigo, normalizarTelefono } from "@/lib/invites";
 import { getSiteUrl, CONTACT_EMAIL } from "@/lib/site";
 import { sendEmail } from "@/lib/email";
+import { enviarBienvenida } from "@/lib/correos/enviar";
 
 // Solo rutas internas: evita que ?redirectTo= mande a un sitio externo.
 function destinoSeguro(destino: string) {
@@ -66,7 +67,7 @@ export async function signUp(_prevState: unknown, formData: FormData) {
     }
   }
 
-  const { error } = await supabase.auth.signUp({
+  const { data: alta, error } = await supabase.auth.signUp({
     email,
     password,
     options: { data: { nombre, ...(codigo ? { codigo_invitacion: codigo } : {}) } },
@@ -85,6 +86,16 @@ export async function signUp(_prevState: unknown, formData: FormData) {
       return { error: "Se requiere un código de invitación válido para registrarte." };
     }
     return { error: "No pudimos crear tu cuenta. Intenta de nuevo." };
+  }
+
+  // T1 · correo de bienvenida. Si falla, el registro sigue igual.
+  const nuevoId = alta?.user?.id;
+  if (nuevoId) {
+    try {
+      await enviarBienvenida({ userId: nuevoId, nombre, email, sitio: await getSiteUrl() });
+    } catch (err) {
+      console.error("[signUp] No se pudo enviar la bienvenida:", err);
+    }
   }
 
   redirect("/perfil?bienvenida=1");

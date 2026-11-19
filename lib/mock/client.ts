@@ -92,7 +92,7 @@ export async function createMockClient() {
         // Los créditos de bienvenida se activan al publicar la primera
         // oferta (ver lib/mock/query.ts y la migración 0021).
         cookieStore.set(MOCK_SESSION_COOKIE, id, { path: "/" });
-        return { error: null };
+        return { data: { user: { id, email } }, error: null };
       },
       async signOut() {
         cookieStore.delete(MOCK_SESSION_COOKIE);

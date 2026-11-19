@@ -6,7 +6,8 @@ import { MOCK_MODE, MOCK_SESSION_COOKIE } from "@/lib/mock/is-mock";
 const AUTH_PATHS = ["/login", "/registro", "/recuperar"];
 // Rutas abiertas a todos (con o sin sesión): la home, el directorio de clubes
 // y /auth/confirm (enlaces de correo que inician la sesión).
-const OPEN_PATHS = ["/clubes", "/auth"];
+// /api/cron la llama Vercel sin sesión; la ruta valida CRON_SECRET.
+const OPEN_PATHS = ["/clubes", "/auth", "/api/cron"];
 
 function isOpenPath(pathname: string) {
   return pathname === "/" || OPEN_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));

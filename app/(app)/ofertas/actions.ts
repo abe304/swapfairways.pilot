@@ -7,6 +7,8 @@ import { requireProfile } from "@/lib/auth";
 import { formatFecha, formatHora } from "@/lib/utils";
 import { sendEmail, nuevaSolicitudEmailHtml } from "@/lib/email";
 import { insertOffers, parseCostos, totalCostos } from "@/lib/offers";
+import { enviarCreditosActivados } from "@/lib/correos/enviar";
+import { getSiteUrl } from "@/lib/site";
 import { seEligeGreenFee, type ClubAcceso, type GreenFeePaga } from "@/lib/niveles";
 
 // Fecha de hoy en hora del centro de México (UTC-6, sin horario de verano):
@@ -132,6 +134,23 @@ export async function createOffer(_prevState: unknown, formData: FormData) {
         ? `No pudimos publicar tu oferta (${error.message}).`
         : "No pudimos publicar tu oferta. Intenta de nuevo.",
     };
+  }
+
+  // T2 · si fue su primera oferta, avisa que se activaron sus créditos.
+  try {
+    await enviarCreditosActivados({
+      userId: profile.id,
+      nombre: profile.nombre,
+      sitio: await getSiteUrl(),
+      clubId: club_id,
+      ofertas: rows.map((r) => ({
+        fecha: "fecha" in r ? r.fecha : null,
+        hora: "hora" in r ? r.hora : null,
+        fecha_flexible: !!r.fecha_flexible,
+      })),
+    });
+  } catch (err) {
+    console.error("[createOffer] No se pudo enviar el aviso de créditos:", err);
   }
 
   revalidatePath("/ofertas");

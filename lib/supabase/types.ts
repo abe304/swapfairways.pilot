@@ -143,6 +143,14 @@ export type TeeTimeOffer = {
   created_at: string;
 }
 
+export type CorreoEnviado = {
+  id: string;
+  user_id: string;
+  tipo: string;
+  referencia: string;
+  enviado_at: string;
+}
+
 export type Request = {
   id: string;
   offer_id: string;
@@ -249,6 +257,12 @@ export interface Database {
             referencedColumns: ["id"];
           },
         ];
+      };
+      correos_enviados: {
+        Row: CorreoEnviado;
+        Insert: Partial<CorreoEnviado> & { user_id: string; tipo: string };
+        Update: Partial<CorreoEnviado>;
+        Relationships: [];
       };
       lista_espera: {
         Row: ListaEspera;
