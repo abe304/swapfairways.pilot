@@ -294,6 +294,13 @@ export const CLUBES_DIRECTORIO: ClubSeed[] = [
   { nombre: 'Vista Verde Country Club Tehuacan', ciudad: '', estado: 'Puebla', direccion: 'Vista Verde Country Club Tehuacan, Puebla, México', tipo: 'privado', latitud: 18.4835875, longitud: -97.4121327 },
   { nombre: 'Zibatá Golf Club', ciudad: '', estado: 'Querétaro', direccion: 'Zibatá Golf Club, Querétaro, México', tipo: 'publico', latitud: 20.6827381, longitud: -100.3373289 },
   { nombre: 'Zirandaro Residencial & Golf', ciudad: '', estado: 'Guanajuato', direccion: 'Zirandaro Residencial & Golf, Guanajuato, México', tipo: 'privado', latitud: 20.9148972, longitud: -100.6874077 },
+  // Agregados el 2026-11-18 (revisión del dueño). Ubicación aproximada a la localidad.
+  { nombre: 'Championship PGA Riviera Maya Golf Club', ciudad: 'Akumal', estado: 'Quintana Roo', direccion: 'Carretera Chetumal-Benito Juárez km 250, Akumal, Q.R.', tipo: 'publico', latitud: 20.398797, longitud: -87.3173404 },
+  { nombre: 'Oleada Golf Links', ciudad: 'Cabo San Lucas', estado: 'Baja California Sur', direccion: 'Oleada Golf Links, Cabo San Lucas, Baja California Sur, México', tipo: 'publico', latitud: 22.8938884, longitud: -109.92006 },
+  { nombre: 'Club de Golf Los Cedros', ciudad: 'Zacapu', estado: 'Michoacán', direccion: 'Privada Cedros 1224, Col. Arboledas, 58650 Zacapu, Mich.', tipo: 'privado', latitud: 19.8302856, longitud: -101.8444215 },
+  { nombre: 'Club Campestre Erandeni', ciudad: 'Tarímbaro', estado: 'Michoacán', direccion: 'Carretera a Salamanca km 6.5, 58880 Tarímbaro, Mich.', tipo: 'privado', latitud: 19.8162789, longitud: -101.1637311 },
+  { nombre: 'Nueve Almas Golf', ciudad: 'Arandas', estado: 'Jalisco', direccion: 'Camino a Jaquetas, 47195 Arandas, Jal.', tipo: 'publico', latitud: 20.7493121, longitud: -102.3142822 },
+  { nombre: 'Punta Brava Golf Club', ciudad: 'Ensenada', estado: 'Baja California', direccion: 'Península de Punta Banda, Ensenada, B.C.', tipo: 'privado', latitud: 31.8280434, longitud: -116.6036996 },
 ];
 
 export const CLUBES_MEXICO: ClubSeed[] = [...CLUBES_PRIVADOS, ...CLUBES_PUBLICOS, ...CLUBES_DIRECTORIO];
