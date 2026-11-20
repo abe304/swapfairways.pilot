@@ -21,11 +21,13 @@ export async function sendEmail({
   subject,
   html,
   fromName,
+  headers,
 }: {
   to: string;
   subject: string;
   html: string;
   fromName?: string;
+  headers?: Record<string, string>;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!RESEND_API_KEY) {
     console.log(`[email] RESEND_API_KEY no configurada, se omite: "${subject}" a ${to}`);
@@ -45,6 +47,7 @@ export async function sendEmail({
         subject,
         html,
         ...(REPLY_TO ? { reply_to: REPLY_TO } : {}),
+        ...(headers ? { headers } : {}),
       }),
     });
     if (!res.ok) {

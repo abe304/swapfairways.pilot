@@ -1,4 +1,4 @@
-// Plantillas de los correos de ciclo de vida (T1, T2, T4, T7, T8).
+// Plantillas de los correos de ciclo de vida (T1, T2, T4, T7, T8, S1–S3).
 // Textos aprobados en docs/correos-ciclo-de-vida.md: si cambias uno aquí,
 // cámbialo también allá.
 import { escapeHtml as e } from "@/lib/email";
@@ -17,8 +17,14 @@ function p(html: string) {
   return `<p style="margin:0 0 14px;line-height:1.55;">${html}</p>`;
 }
 
+// Pie de los correos de seguimiento (S1–S4): enlace para darse de baja.
+function pieBaja(bajaHref: string | null) {
+  if (!bajaHref) return "";
+  return `<p style="margin:12px 0 0;font-size:12px;color:#8a968f;">¿Prefieres no recibir estos correos? <a href="${e(bajaHref)}" style="color:#8a968f;">Dejar de recibirlos</a>. Los avisos de tus rondas te seguirán llegando.</p>`;
+}
+
 // Estructura común: preencabezado oculto, cuerpo y firma de Abraham.
-function plantilla(preencabezado: string, cuerpo: string) {
+function plantilla(preencabezado: string, cuerpo: string, pie = "") {
   return `
 <div style="background:${CREMA};padding:24px 12px;">
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${e(preencabezado)}</div>
@@ -27,6 +33,7 @@ function plantilla(preencabezado: string, cuerpo: string) {
     ${cuerpo}
     <p style="margin:28px 0 0;line-height:1.5;">Abraham<br/><span style="color:#5b6b63;">Fundador, SwapFairways</span></p>
     <p style="margin:16px 0 0;font-size:13px;color:#5b6b63;font-style:italic;">Si respondes este correo, me llega directo a mí.</p>
+    ${pie}
   </div>
 </div>`;
 }
@@ -186,6 +193,96 @@ export function t8Resena(params: {
       `${hola(nombre)}
       ${p(`Espero que hayas disfrutado ${e(clubNombre)}. Una reseña corta de ${e(anfitrion)} ayuda a que otros socios se animen a recibir y a visitar.`)}
       ${boton("Dejar reseña", `${sitio}/rondas/${requestId}/resena`)}`,
+    ),
+  };
+}
+
+// ============================================================
+// Seguimiento (S1–S4). Llevan enlace de baja; T1–T8 no.
+// ============================================================
+
+// ---------- S1 · Día 7 sin ofertas ----------
+export function s1SinOfertas(params: {
+  nombre: string;
+  sitio: string;
+  clubNombre: string;
+  nivelLabel: string;
+  creditosNivel: number;
+  clubesConOfertas: number; // otros clubes con ofertas abiertas
+  clubTieneOfertas: boolean; // otro socio ya publicó en su club
+  bajaHref: string | null;
+}): Correo {
+  const { nombre, sitio, clubNombre, nivelLabel, creditosNivel, clubesConOfertas, clubTieneOfertas } = params;
+  const club = e(clubNombre);
+  const n = clubesConOfertas;
+  const red = clubTieneOfertas
+    ? `Hoy hay ${n} ${n === 1 ? "club" : "clubes"} con ofertas, y en ${club} todavía falta la tuya.`
+    : n > 0
+      ? `Hoy hay ${n} ${n === 1 ? "club" : "clubes"} con ofertas y a ${club} todavía le falta la suya.`
+      : `La red apenas arranca y ${club} puede ser de los primeros clubes con oferta.`;
+  const unidad = creditosNivel === 1 ? "crédito" : "créditos";
+  return {
+    subject: clubTieneOfertas
+      ? `Tu oferta en ${clubNombre} todavía no está en la red`
+      : `${clubNombre} todavía no tiene ofertas en la red`,
+    html: plantilla(
+      "Una oferta activa tus 3 créditos.",
+      `${hola(nombre)}
+      ${p(`La red funciona porque cada socio abre un lugar en su club. ${red}`)}
+      ${p(`Como ${club} es ${e(nivelLabel)}, cada invitado que recibes te da <strong>${creditosNivel} ${unidad}</strong>, que luego usas para jugar en otros clubes. Y con tu primera oferta se activan tus 3 créditos de bienvenida.`)}
+      ${p("Publicarla toma menos de un minuto: una fecha y cuántos lugares.")}
+      ${boton(`Publicar oferta en ${clubNombre}`, `${sitio}/ofertas/nueva`)}`,
+      pieBaja(params.bajaHref),
+    ),
+  };
+}
+
+// ---------- S2 · Primer hosteo ----------
+export function s2PrimerHosteo(params: {
+  nombre: string;
+  sitio: string;
+  invitado: string;
+  clubNombre: string;
+  saldo: number;
+  bajaHref: string | null;
+}): Correo {
+  const { nombre, sitio, invitado, clubNombre, saldo } = params;
+  return {
+    subject: `Gracias por recibir a ${invitado}`,
+    html: plantilla(
+      "Y una pregunta rápida.",
+      `${hola(nombre)}
+      ${p(`Gracias por recibir a ${e(invitado)} en ${e(clubNombre)}. Eres de los primeros socios en hacerlo, y esto es justo lo que queremos que pase en la red.`)}
+      ${p(`Ya tienes ${saldo} ${saldo === 1 ? "crédito" : "créditos"} para jugar donde quieras.`)}
+      ${p("Una pregunta y te dejo en paz: <strong>¿qué fue lo más difícil o lo que más te estorbó del proceso?</strong> Responde este correo, aunque sea con una línea; lo leo todo.")}
+      ${boton("Ver dónde usar mis créditos", `${sitio}/ofertas`)}`,
+      pieBaja(params.bajaHref),
+    ),
+  };
+}
+
+// ---------- S3 · Primera salida como invitado ----------
+export function s3PrimeraSalida(params: {
+  nombre: string;
+  sitio: string;
+  clubNombre: string; // donde jugó
+  clubPropio: string | null; // su club, si lo tiene en el perfil
+  bajaHref: string | null;
+}): Correo {
+  const { nombre, sitio, clubNombre, clubPropio } = params;
+  const cierre = clubPropio
+    ? `${p(`Y si quieres que alguien viva lo mismo en tu club, publica una oferta en ${e(clubPropio)}.`)}
+      ${boton(`Publicar oferta en ${clubPropio}`, `${sitio}/ofertas/nueva`)}`
+    : boton("Ver más ofertas", `${sitio}/ofertas`);
+  return {
+    subject: "Tu primera ronda con SwapFairways",
+    html: plantilla(
+      "Para esto la hicimos.",
+      `${hola(nombre)}
+      ${p(`Jugar en ${e(clubNombre)} gracias a otro socio es justo para lo que hicimos SwapFairways. Gracias por confiar en la red tan pronto.`)}
+      ${p("Me ayudaría mucho saber <strong>¿qué mejorarías para que repitas?</strong> Responde este correo; me llega directo a mí.")}
+      ${cierre}`,
+      pieBaja(params.bajaHref),
     ),
   };
 }

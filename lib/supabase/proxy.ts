@@ -7,7 +7,8 @@ const AUTH_PATHS = ["/login", "/registro", "/recuperar"];
 // Rutas abiertas a todos (con o sin sesión): la home, el directorio de clubes
 // y /auth/confirm (enlaces de correo que inician la sesión).
 // /api/cron la llama Vercel sin sesión; la ruta valida CRON_SECRET.
-const OPEN_PATHS = ["/clubes", "/auth", "/api/cron"];
+// /correos y /api/correos: baja de correos con enlace firmado, sin sesión.
+const OPEN_PATHS = ["/clubes", "/auth", "/api/cron", "/correos", "/api/correos"];
 
 function isOpenPath(pathname: string) {
   return pathname === "/" || OPEN_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));

@@ -1,8 +1,10 @@
 // Envío de los correos de ciclo de vida. Ver docs/correos-ciclo-de-vida.md.
 //
 // * T1 y T2 se mandan en el momento (registro y primera oferta).
-// * T4, T7 y T8 los manda revisionDiaria(), que corre una vez al día desde
-//   /api/cron/correos (Vercel Cron).
+// * T4, T7 y T8, y los de seguimiento S1–S3, los manda revisionDiaria(),
+//   que corre una vez al día desde /api/cron/correos (Vercel Cron).
+// * S1–S3 respetan profiles.correos_seguimiento (migración 0023) y llevan
+//   enlace de baja (lib/correos/baja.ts). T1–T8 siempre se mandan.
 //
 // Cada correo se registra en correos_enviados (migración 0022) ANTES de
 // mandarlo: si ya estaba registrado no se repite. Si el envío falla, se
@@ -14,6 +16,8 @@ import { MOCK_MODE } from "@/lib/mock/is-mock";
 import { createClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email";
 import { formatFecha, formatHora } from "@/lib/utils";
+import { creditosPorNivel, nivelLabel, type ClubNivel } from "@/lib/niveles";
+import { enlaceBaja } from "./baja";
 import {
   t1Bienvenida,
   t2CreditosActivados,
@@ -21,6 +25,9 @@ import {
   t7RondaManana,
   t8MarcarJugada,
   t8Resena,
+  s1SinOfertas,
+  s2PrimerHosteo,
+  s3PrimeraSalida,
   type Correo,
 } from "./plantillas";
 
@@ -28,7 +35,7 @@ const REMITENTE = "Abraham de SwapFairways";
 const DIA_MS = 24 * 60 * 60 * 1000;
 
 type Db = SupabaseClient<Database>;
-export type TipoCorreo = "T1" | "T2" | "T4" | "T7" | "T8";
+export type TipoCorreo = "T1" | "T2" | "T4" | "T7" | "T8" | "S1" | "S2" | "S3";
 
 // Cliente que puede leer todo (service role). En modo demo, el simulado.
 async function db(): Promise<Db> {
@@ -87,7 +94,14 @@ export type ResultadoEnvio = "enviado" | "ya_enviado" | "sin_correo" | "fallo";
 
 async function enviarUnaVez(
   cliente: Db,
-  args: { userId: string; tipo: TipoCorreo; referencia?: string; correo: Correo; to?: string },
+  args: {
+    userId: string;
+    tipo: TipoCorreo;
+    referencia?: string;
+    correo: Correo;
+    to?: string;
+    headers?: Record<string, string>;
+  },
 ): Promise<ResultadoEnvio> {
   const referencia = args.referencia ?? "";
   if (!(await apartar(cliente, args.userId, args.tipo, referencia))) return "ya_enviado";
@@ -98,7 +112,7 @@ async function enviarUnaVez(
     return "sin_correo";
   }
 
-  const res = await sendEmail({ to, ...args.correo, fromName: REMITENTE });
+  const res = await sendEmail({ to, ...args.correo, fromName: REMITENTE, headers: args.headers });
   if (!res.ok) {
     await liberar(cliente, args.userId, args.tipo, referencia);
     return "fallo";
@@ -195,9 +209,10 @@ export async function enviarCreditosActivados(params: {
 }
 
 // ============================================================
-// Revisión diaria: T4, T7 y T8
+// Revisión diaria: T4, T7, T8 y S1–S3
 // ============================================================
 type Fila = Record<string, unknown>;
+type Contar = (tipo: string, r: ResultadoEnvio) => void;
 
 export async function revisionDiaria(sitio: string) {
   const cliente = await db();
@@ -219,6 +234,13 @@ export async function revisionDiaria(sitio: string) {
     resumen[tipo] ??= { enviado: 0, ya_enviado: 0, sin_correo: 0, fallo: 0 };
     resumen[tipo][r] += 1;
   };
+
+  // Si falla el seguimiento (p. ej. falta la migración 0023), T4–T8 siguen.
+  try {
+    await revisarSeguimiento(cliente, sitio, solicitudes, contar);
+  } catch (err) {
+    console.error("[correos] Falló la revisión de seguimiento (S1–S3):", err);
+  }
 
   if (solicitudes.length === 0) return { hoy, resumen };
 
@@ -382,4 +404,145 @@ export async function revisionDiaria(sitio: string) {
   }
 
   return { hoy, resumen };
+}
+
+// ============================================================
+// Seguimiento: S1, S2 y S3 (una sola vez por persona)
+// ============================================================
+// * S1: entre 7 y 13 días después de registrarse, con club en el perfil y
+//   sin haber publicado nunca una oferta.
+// * S2: su primera ronda como anfitrión se marcó jugada en los últimos 3 días.
+// * S3: su primera ronda como invitado se marcó jugada hace 1 a 4 días (un
+//   día después del T8 de reseña, para no mandarle dos correos juntos).
+async function revisarSeguimiento(cliente: Db, sitio: string, solicitudes: Fila[], contar: Contar) {
+  const ahora = Date.now();
+  const hoy = fechaMexico();
+
+  const { data: perfilesRaw, error } = await cliente
+    .from("profiles")
+    .select("id, nombre, club_id, creditos_balance, correos_seguimiento, created_at");
+  if (error) throw new Error(`No se pudieron leer los perfiles: ${error.message}`);
+  const perfiles = new Map(((perfilesRaw ?? []) as Fila[]).map((p) => [p.id as string, p]));
+  const recibe = (id: string) => {
+    const perfil = perfiles.get(id);
+    return !!perfil && perfil.correos_seguimiento !== false;
+  };
+
+  const { data: ofertasRaw } = await cliente
+    .from("tee_time_offers")
+    .select("id, host_id, club_id, estado, fecha, fecha_flexible");
+  const ofertas = (ofertasRaw ?? []) as Fila[];
+  const ofertaPorId = new Map(ofertas.map((o) => [o.id as string, o]));
+
+  const { data: clubsRaw } = await cliente.from("clubs").select("id, nombre, nivel");
+  const clubs = new Map(((clubsRaw ?? []) as Fila[]).map((c) => [c.id as string, c]));
+  const clubNombre = (id: unknown) => (clubs.get(id as string)?.nombre as string) ?? "tu club";
+
+  const conBaja = (userId: string) => {
+    const href = enlaceBaja(sitio, userId);
+    return {
+      bajaHref: href,
+      headers: href
+        ? {
+            "List-Unsubscribe": `<${href.replace("/correos/baja", "/api/correos/baja")}>`,
+            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+          }
+        : undefined,
+    };
+  };
+
+  // ---------- S1 ----------
+  const anfitriones = new Set(ofertas.map((o) => o.host_id as string));
+  const abiertas = ofertas.filter(
+    (o) => o.estado === "activa" && (o.fecha_flexible || ((o.fecha as string | null) ?? "") >= hoy),
+  );
+  for (const perfil of perfiles.values()) {
+    const id = perfil.id as string;
+    const dias = (ahora - new Date(perfil.created_at as string).getTime()) / DIA_MS;
+    if (dias < 7 || dias >= 14 || !perfil.club_id || anfitriones.has(id) || !recibe(id)) continue;
+    const clubId = perfil.club_id as string;
+    const nivel = (clubs.get(clubId)?.nivel as ClubNivel | undefined) ?? null;
+    const otrosClubes = new Set(abiertas.map((o) => o.club_id as string));
+    const clubTieneOfertas = otrosClubes.has(clubId);
+    otrosClubes.delete(clubId);
+    const { bajaHref, headers } = conBaja(id);
+    contar(
+      "S1",
+      await enviarUnaVez(cliente, {
+        userId: id,
+        tipo: "S1",
+        headers,
+        correo: s1SinOfertas({
+          nombre: (perfil.nombre as string) ?? "",
+          sitio,
+          clubNombre: clubNombre(clubId),
+          nivelLabel: nivelLabel(nivel),
+          creditosNivel: creditosPorNivel(nivel),
+          clubesConOfertas: otrosClubes.size + (clubTieneOfertas ? 1 : 0),
+          clubTieneOfertas,
+          bajaHref,
+        }),
+      }),
+    );
+  }
+
+  // ---------- S2 y S3: primera ronda jugada de cada quien ----------
+  const jugadas = solicitudes
+    .filter((s) => s.estado === "jugado" && s.jugado_at && ofertaPorId.has(s.offer_id as string))
+    .sort((a, b) => new Date(a.jugado_at as string).getTime() - new Date(b.jugado_at as string).getTime());
+  const primeraComoAnfitrion = new Map<string, Fila>();
+  const primeraComoInvitado = new Map<string, Fila>();
+  for (const s of jugadas) {
+    const hostId = ofertaPorId.get(s.offer_id as string)!.host_id as string;
+    if (!primeraComoAnfitrion.has(hostId)) primeraComoAnfitrion.set(hostId, s);
+    const guestId = s.guest_id as string;
+    if (!primeraComoInvitado.has(guestId)) primeraComoInvitado.set(guestId, s);
+  }
+  const haceDias = (s: Fila) => (ahora - new Date(s.jugado_at as string).getTime()) / DIA_MS;
+  const nombre = (id: string) => (perfiles.get(id)?.nombre as string) ?? "un socio";
+
+  for (const [hostId, s] of primeraComoAnfitrion) {
+    if (haceDias(s) > 3 || !recibe(hostId)) continue;
+    const o = ofertaPorId.get(s.offer_id as string)!;
+    const { bajaHref, headers } = conBaja(hostId);
+    contar(
+      "S2",
+      await enviarUnaVez(cliente, {
+        userId: hostId,
+        tipo: "S2",
+        headers,
+        correo: s2PrimerHosteo({
+          nombre: nombre(hostId),
+          sitio,
+          invitado: nombre(s.guest_id as string),
+          clubNombre: clubNombre(o.club_id),
+          saldo: (perfiles.get(hostId)?.creditos_balance as number) ?? 0,
+          bajaHref,
+        }),
+      }),
+    );
+  }
+
+  for (const [guestId, s] of primeraComoInvitado) {
+    const d = haceDias(s);
+    if (d < 1 || d > 4 || !recibe(guestId)) continue;
+    const o = ofertaPorId.get(s.offer_id as string)!;
+    const propio = perfiles.get(guestId)?.club_id as string | null;
+    const { bajaHref, headers } = conBaja(guestId);
+    contar(
+      "S3",
+      await enviarUnaVez(cliente, {
+        userId: guestId,
+        tipo: "S3",
+        headers,
+        correo: s3PrimeraSalida({
+          nombre: nombre(guestId),
+          sitio,
+          clubNombre: clubNombre(o.club_id),
+          clubPropio: propio ? clubNombre(propio) : null,
+          bajaHref,
+        }),
+      }),
+    );
+  }
 }

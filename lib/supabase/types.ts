@@ -49,6 +49,8 @@ export type Profile = {
   invitado_por: string | null;
   codigo_usado: string | null;
   referido_pagado: boolean;
+  /** Recibe los correos de seguimiento S1–S4 (migración 0023). */
+  correos_seguimiento?: boolean;
   created_at: string;
 }
 
