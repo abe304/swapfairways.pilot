@@ -92,6 +92,18 @@ export default async function OfertaDetallePage({
     },
   ].filter((d) => d.monto > 0);
 
+  // Si el green fee no tiene costo para el invitado, se dice por qué, para
+  // que se entienda que no falta en la cuenta.
+  const greenFeeCapturado = (offer.costo_green_fee ?? 0) > 0;
+  const notaGreenFee = greenFeeCapturado
+    ? null
+    : club?.acceso === "pase"
+      ? "Sin costo: entras con el pase de invitado del anfitrión"
+      : seEligeGreenFee(club?.acceso) && offer.green_fee_paga === "anfitrion"
+        ? "Lo cubre el anfitrión"
+        : null;
+  const totalInvitado = offer.costo_estimado ?? totalCostos(offer as Costos, compartidos);
+
   const isHost = offer.host_id === profile.id;
   const cuposLibres = offer.pases_disponibles - offer.pases_confirmados;
   const costoCreditos = creditosOferta(club, offer.green_fee_paga);
@@ -177,8 +189,10 @@ export default async function OfertaDetallePage({
               Carrito compartido
             </Badge>
           ) : null}
-          {offer.costo_estimado ? (
-            <Badge tone="gold">Costo aprox.: {formatMoneda(offer.costo_estimado)}</Badge>
+          {totalInvitado > 0 ? (
+            <a href="#costos" className="rounded-full focus:outline-none focus:ring-2 focus:ring-swf-dorado">
+              <Badge tone="gold">Costo aprox.: {formatMoneda(totalInvitado)} · ver qué incluye</Badge>
+            </a>
           ) : null}
           <Badge tone="gold">
             Vale {costoCreditos} {costoCreditos === 1 ? "crédito" : "créditos"}
@@ -203,6 +217,57 @@ export default async function OfertaDetallePage({
               : ""}
           </p>
         </div>
+      </Card>
+
+      <Card id="costos" className="scroll-mt-24">
+        <div className="mb-3 flex items-baseline justify-between gap-3">
+          <h2 className="text-sm font-semibold text-swf-verde">¿Qué incluye el costo?</h2>
+          {totalInvitado > 0 ? (
+            <p className="text-lg font-semibold text-swf-verde">{formatMoneda(totalInvitado)}</p>
+          ) : null}
+        </div>
+        {desglose.length > 0 ? (
+          <ul className="divide-y divide-swf-verde/10 text-sm">
+            {notaGreenFee ? (
+              <li className="flex items-start justify-between gap-3 py-2">
+                <span className="text-swf-verde">
+                  Green fee
+                  <span className="block text-xs text-swf-verde/60">{notaGreenFee}</span>
+                </span>
+                <span className="shrink-0 text-swf-verde/70">$0</span>
+              </li>
+            ) : null}
+            {desglose.map((d) => (
+              <li key={d.label} className="flex items-start justify-between gap-3 py-2">
+                <span className="text-swf-verde">
+                  {d.label}
+                  {d.nota ? <span className="block text-xs text-swf-verde/60">{d.nota}</span> : null}
+                </span>
+                <span className="shrink-0 font-medium text-swf-verde">{formatMoneda(d.monto)}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {desglose.length === 0 ? (
+          <p className="text-sm text-swf-verde/70">
+            {notaGreenFee
+              ? club?.acceso === "pase"
+                ? "El green fee no tiene costo porque entras con el pase de invitado del anfitrión. "
+                : "El green fee lo cubre el anfitrión. "
+              : ""}
+            {totalInvitado > 0
+              ? `El anfitrión no desglosó ${notaGreenFee ? "el resto del" : "este"} monto. Pregúntale qué incluye cuando coordinen la ronda.`
+              : `El anfitrión no indicó ${notaGreenFee ? "otros costos" : "costos"} para esta salida. Confírmalos al coordinar la ronda.`}
+          </p>
+        ) : null}
+        <p className="mt-3 rounded-md bg-swf-dorado/10 px-3 py-2 text-xs text-swf-verde/80">
+          {totalInvitado > 0
+            ? "Son montos aproximados que pagas directo en el club el día de la ronda, no a través de SwapFairways. "
+            : ""}
+          {costoCreditos === 1
+            ? "El crédito de la salida es aparte."
+            : `Los ${costoCreditos} créditos de la salida son aparte.`}
+        </p>
       </Card>
 
       {tieneReglas ? (
@@ -281,24 +346,6 @@ export default async function OfertaDetallePage({
               <p>
                 <span className="font-medium">Tu GHIN:</span> {host.ghin_id}
               </p>
-            ) : null}
-            {desglose.length > 0 || offer.costo_estimado ? (
-              <div className="rounded-md bg-swf-dorado/10 p-3 text-swf-verde">
-                <p>Costos aproximados a pagar directo en el club (no a través de SWF):</p>
-                {desglose.length > 0 ? (
-                  <ul className="mt-1 list-disc pl-5">
-                    {desglose.map((d) => (
-                      <li key={d.label}>
-                        {d.label}: {formatMoneda(d.monto)}
-                        {d.nota ? ` (${d.nota})` : ""}
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-                <p className="mt-1 font-medium">
-                  Total aproximado: {formatMoneda(offer.costo_estimado ?? totalCostos(offer as Costos, compartidos))}
-                </p>
-              </div>
             ) : null}
           </div>
         ) : (
