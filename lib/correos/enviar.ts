@@ -224,7 +224,8 @@ export async function revisionDiaria(sitio: string) {
 
   const { data: solicitudesRaw, error } = await cliente
     .from("requests")
-    .select("id, offer_id, guest_id, estado, creditos_cobrados, created_at, jugado_at")
+    // "*" para no fallar si todavía no se corre la 0024 (creditos_anfitrion).
+    .select("*")
     .in("estado", ["pendiente", "aprobado", "jugado"]);
   if (error) throw new Error(`No se pudieron leer las solicitudes: ${error.message}`);
   const solicitudes = (solicitudesRaw ?? []) as Fila[];
@@ -397,7 +398,10 @@ export async function revisionDiaria(sitio: string) {
           sitio,
           invitados: lista.map((s) => nombre(s.guest_id as string)),
           clubNombre: (club?.nombre as string) ?? "tu club",
-          creditos: lista.reduce((t, s) => t + ((s.creditos_cobrados as number) ?? 1), 0),
+          creditos: lista.reduce(
+            (t, s) => t + ((s.creditos_anfitrion as number | null) ?? (s.creditos_cobrados as number) ?? 1),
+            0,
+          ),
         }),
       }),
     );

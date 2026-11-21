@@ -14,6 +14,7 @@ import {
   CREDITOS_GREEN_FEE_INVITADO,
   accesoLabel,
   creditosOferta,
+  creditosAnfitrion,
   seEligeGreenFee,
   type GreenFeePaga,
 } from "@/lib/niveles";
@@ -117,10 +118,7 @@ export function OfferForm({
             <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-swf-verde/70">
               <NivelBadge nivel={clubSel.nivel} />
               <span>
-                {accesoLabel(clubSel.acceso)} ·{" "}
-                {creditosOferta(clubSel, eligeGreenFee ? greenFeePaga : null)}{" "}
-                {creditosOferta(clubSel, eligeGreenFee ? greenFeePaga : null) === 1 ? "crédito" : "créditos"} por
-                ronda
+                {accesoLabel(clubSel.acceso)} · {textoCreditos(clubSel, eligeGreenFee ? greenFeePaga : null)}
               </span>
             </p>
           ) : null}
@@ -131,7 +129,10 @@ export function OfferForm({
             <legend className="px-1 text-sm font-medium text-swf-verde">¿Quién paga el green fee?</legend>
             <p className="mb-2 text-xs text-swf-verde/60">
               En este club se paga por jugar. Si tú lo cubres, la ronda vale lo del nivel del club;
-              si lo paga tu invitado, vale {CREDITOS_GREEN_FEE_INVITADO} crédito.
+              si lo paga tu invitado, a tu invitado le cuesta {CREDITOS_GREEN_FEE_INVITADO} crédito
+              {clubSel?.nivel === "premium"
+                ? ` y tú recibes ${creditosAnfitrion(clubSel, "invitado")} por ser un club Premium.`
+                : "."}
             </p>
             <div className="flex flex-col gap-2 text-sm text-swf-verde sm:flex-row sm:gap-6">
               <label className="flex items-center gap-2">
@@ -143,7 +144,8 @@ export function OfferForm({
                   checked={greenFeePaga === "invitado"}
                   onChange={() => setGreenFeePaga("invitado")}
                 />
-                Lo paga el invitado ({CREDITOS_GREEN_FEE_INVITADO} crédito)
+                Lo paga el invitado (recibes {creditosAnfitrion(clubSel, "invitado")}{" "}
+                {creditosAnfitrion(clubSel, "invitado") === 1 ? "crédito" : "créditos"})
               </label>
               <label className="flex items-center gap-2">
                 <input
@@ -154,7 +156,7 @@ export function OfferForm({
                   checked={greenFeePaga === "anfitrion"}
                   onChange={() => setGreenFeePaga("anfitrion")}
                 />
-                Yo lo cubro ({clubSel?.costo_creditos ?? 1}{" "}
+                Yo lo cubro (recibes {clubSel?.costo_creditos ?? 1}{" "}
                 {(clubSel?.costo_creditos ?? 1) === 1 ? "crédito" : "créditos"})
               </label>
             </div>
@@ -387,4 +389,17 @@ export function OfferForm({
       </form>
     </Card>
   );
+}
+
+// "1 crédito por ronda" o, si el anfitrión recibe distinto de lo que paga el
+// invitado (Premium con green fee, 0024), "tu invitado paga 1 · tú recibes 2".
+function textoCreditos(
+  club: Parameters<typeof creditosOferta>[0] & Parameters<typeof creditosAnfitrion>[0],
+  greenFeePaga: GreenFeePaga | null,
+) {
+  const paga = creditosOferta(club, greenFeePaga);
+  const recibe = creditosAnfitrion(club, greenFeePaga);
+  const c = (n: number) => `${n} ${n === 1 ? "crédito" : "créditos"}`;
+  if (paga === recibe) return `${c(paga)} por ronda`;
+  return `tu invitado paga ${c(paga)} · tú recibes ${c(recibe)}`;
 }

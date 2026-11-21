@@ -1,5 +1,5 @@
 import { NivelBadge } from "@/components/NivelBadge";
-import { accesoLabel, creditosOferta, seEligeGreenFee, type ClubAcceso, type ClubNivel } from "@/lib/niveles";
+import { accesoLabel, creditosAnfitrion, creditosOferta, seEligeGreenFee, type ClubAcceso, type ClubNivel } from "@/lib/niveles";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -107,6 +107,7 @@ export default async function OfertaDetallePage({
   const isHost = offer.host_id === profile.id;
   const cuposLibres = offer.pases_disponibles - offer.pases_confirmados;
   const costoCreditos = creditosOferta(club, offer.green_fee_paga);
+  const creditosHost = creditosAnfitrion(club, offer.green_fee_paga);
   const { data: documentosClub } = await supabase
     .from("club_documentos")
     .select("id, tipo, titulo, url")
@@ -195,7 +196,9 @@ export default async function OfertaDetallePage({
             </a>
           ) : null}
           <Badge tone="gold">
-            Vale {costoCreditos} {costoCreditos === 1 ? "crédito" : "créditos"}
+            {isHost
+              ? `Recibes ${creditosHost} ${creditosHost === 1 ? "crédito" : "créditos"} por invitado`
+              : `Vale ${costoCreditos} ${costoCreditos === 1 ? "crédito" : "créditos"}`}
           </Badge>
           {seEligeGreenFee(club?.acceso) ? (
             <Badge>

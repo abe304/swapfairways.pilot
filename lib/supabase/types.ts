@@ -159,6 +159,8 @@ export type Request = {
   guest_id: string;
   estado: RequestEstado;
   creditos_cobrados: number;
+  /** Lo que recibe el anfitrión al jugarse (0024); null = lo mismo que creditos_cobrados. */
+  creditos_anfitrion?: number | null;
   created_at: string;
   aprobado_at: string | null;
   jugado_at: string | null;
