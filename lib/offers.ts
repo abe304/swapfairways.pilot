@@ -5,7 +5,7 @@ import type { Database } from "@/lib/supabase/types";
 // definen una sola vez para que el formulario, el detalle de la oferta y la
 // simulación automática hablen de lo mismo.
 export const COSTO_CONCEPTOS = [
-  { key: "costo_green_fee", label: "Green fee", hint: "Si el club no da pase gratuito a invitados" },
+  { key: "costo_green_fee", label: "Green fee", hint: "En clubes con green fee lo paga tu invitado" },
   { key: "costo_carrito", label: "Carrito", hint: "" },
   { key: "costo_caddie", label: "Caddie", hint: "" },
   { key: "costo_desayuno", label: "Desayuno", hint: "" },

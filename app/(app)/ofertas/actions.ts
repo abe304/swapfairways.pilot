@@ -9,7 +9,7 @@ import { sendEmail, nuevaSolicitudEmailHtml } from "@/lib/email";
 import { insertOffers, parseCostos, totalCostos } from "@/lib/offers";
 import { enviarCreditosActivados } from "@/lib/correos/enviar";
 import { getSiteUrl } from "@/lib/site";
-import { seEligeGreenFee, type ClubAcceso, type GreenFeePaga } from "@/lib/niveles";
+import { invitadoPagaGreenFee, type ClubAcceso, type GreenFeePaga } from "@/lib/niveles";
 
 // Fecha de hoy en hora del centro de México (UTC-6, sin horario de verano):
 // el servidor corre en UTC y "hoy" para el socio no es el "hoy" del servidor
@@ -88,15 +88,12 @@ export async function createOffer(_prevState: unknown, formData: FormData) {
 
   const supabase = await createClient();
 
-  // Quién paga el green fee solo aplica en clubes con green fee o abiertos.
-  // Si lo cubre el anfitrión, el invitado no lo paga: no se cuenta en sus costos.
+  // En clubes con green fee o abiertos el green fee siempre lo paga el
+  // invitado: el anfitrión nunca lo cubre (migración 0025).
   const { data: club } = await supabase.from("clubs").select("acceso").eq("id", club_id).single();
-  const green_fee_paga: GreenFeePaga | null = seEligeGreenFee(club?.acceso as ClubAcceso | undefined)
-    ? formData.get("green_fee_paga") === "anfitrion"
-      ? "anfitrion"
-      : "invitado"
+  const green_fee_paga: GreenFeePaga | null = invitadoPagaGreenFee(club?.acceso as ClubAcceso | undefined)
+    ? "invitado"
     : null;
-  if (green_fee_paga === "anfitrion") costos.costo_green_fee = null;
 
   const base = {
     host_id: profile.id,

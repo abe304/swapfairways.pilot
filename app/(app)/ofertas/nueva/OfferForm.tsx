@@ -15,8 +15,7 @@ import {
   accesoLabel,
   creditosOferta,
   creditosAnfitrion,
-  seEligeGreenFee,
-  type GreenFeePaga,
+  invitadoPagaGreenFee,
 } from "@/lib/niveles";
 
 export function OfferForm({
@@ -39,9 +38,8 @@ export function OfferForm({
   const [clubSel, setClubSel] = useState<Club | null>(
     () => clubs.find((c) => c.id === defaultClubId) ?? null,
   );
-  const [greenFeePaga, setGreenFeePaga] = useState<GreenFeePaga>("invitado");
-  const eligeGreenFee = seEligeGreenFee(clubSel?.acceso);
-  const anfitrionCubre = eligeGreenFee && greenFeePaga === "anfitrion";
+  // En clubes con green fee o abiertos el invitado siempre paga el green fee (0025).
+  const pagaGreenFee = invitadoPagaGreenFee(clubSel?.acceso);
   // Se guarda como texto para poder vaciar el campo mientras se escribe; se
   // ajusta a 1–3 al salir del campo.
   const [pasesTexto, setPasesTexto] = useState("1");
@@ -54,7 +52,7 @@ export function OfferForm({
     Object.fromEntries(
       Object.entries(costos).map(([k, v]) => [
         k,
-        v && !(anfitrionCubre && k === "costo_green_fee") ? Number(v) || 0 : 0,
+        v ? Number(v) || 0 : 0,
       ]),
     ) as Costos,
     compartidos,
@@ -118,49 +116,20 @@ export function OfferForm({
             <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-swf-verde/70">
               <NivelBadge nivel={clubSel.nivel} />
               <span>
-                {accesoLabel(clubSel.acceso)} · {textoCreditos(clubSel, eligeGreenFee ? greenFeePaga : null)}
+                {accesoLabel(clubSel.acceso)} · {textoCreditos(clubSel)}
               </span>
             </p>
           ) : null}
         </FormField>
 
-        {eligeGreenFee ? (
-          <fieldset className="rounded-md border border-swf-verde/15 p-3">
-            <legend className="px-1 text-sm font-medium text-swf-verde">¿Quién paga el green fee?</legend>
-            <p className="mb-2 text-xs text-swf-verde/60">
-              En este club se paga por jugar. Si tú lo cubres, la ronda vale lo del nivel del club;
-              si lo paga tu invitado, a tu invitado le cuesta {CREDITOS_GREEN_FEE_INVITADO} crédito
-              {clubSel?.nivel === "premium"
-                ? ` y tú recibes ${creditosAnfitrion(clubSel, "invitado")} por ser un club Premium.`
-                : "."}
-            </p>
-            <div className="flex flex-col gap-2 text-sm text-swf-verde sm:flex-row sm:gap-6">
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="green_fee_paga"
-                  value="invitado"
-                  className="h-4 w-4"
-                  checked={greenFeePaga === "invitado"}
-                  onChange={() => setGreenFeePaga("invitado")}
-                />
-                Lo paga el invitado (recibes {creditosAnfitrion(clubSel, "invitado")}{" "}
-                {creditosAnfitrion(clubSel, "invitado") === 1 ? "crédito" : "créditos"})
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="green_fee_paga"
-                  value="anfitrion"
-                  className="h-4 w-4"
-                  checked={greenFeePaga === "anfitrion"}
-                  onChange={() => setGreenFeePaga("anfitrion")}
-                />
-                Yo lo cubro (recibes {clubSel?.costo_creditos ?? 1}{" "}
-                {(clubSel?.costo_creditos ?? 1) === 1 ? "crédito" : "créditos"})
-              </label>
-            </div>
-          </fieldset>
+        {pagaGreenFee ? (
+          <p className="rounded-md border border-swf-verde/15 p-3 text-xs text-swf-verde/70">
+            En este club se paga green fee y <strong>lo paga tu invitado</strong> directo en el club. Captura
+            el monto abajo para que sepa cuánto es. A tu invitado le cuesta {CREDITOS_GREEN_FEE_INVITADO} crédito
+            {creditosAnfitrion(clubSel) > CREDITOS_GREEN_FEE_INVITADO
+              ? ` y tú recibes ${creditosAnfitrion(clubSel)} por ser un club Premium.`
+              : "."}
+          </p>
         ) : null}
 
         <label className="flex items-center gap-2 text-sm text-swf-verde">
@@ -304,13 +273,9 @@ export function OfferForm({
                     step="1"
                     inputMode="numeric"
                     placeholder="0"
-                    value={anfitrionCubre && c.key === "costo_green_fee" ? "" : (costos[c.key] ?? "")}
-                    disabled={anfitrionCubre && c.key === "costo_green_fee"}
+                    value={costos[c.key] ?? ""}
                     onChange={(e) => setCostos((prev) => ({ ...prev, [c.key]: e.target.value }))}
                   />
-                  {anfitrionCubre && c.key === "costo_green_fee" ? (
-                    <p className="mt-0.5 text-[11px] text-swf-verde/50">Tú cubres el green fee.</p>
-                  ) : null}
                   {compartible ? (
                     <>
                       <label className="mt-1 flex items-center gap-2 text-xs text-swf-verde">
@@ -335,7 +300,7 @@ export function OfferForm({
                           : "El invitado paga el monto completo."}
                       </p>
                     </>
-                  ) : c.hint && !(anfitrionCubre && c.key === "costo_green_fee") ? (
+                  ) : c.hint ? (
                     <p className="mt-0.5 text-[11px] text-swf-verde/50">{c.hint}</p>
                   ) : null}
                 </div>
@@ -393,12 +358,9 @@ export function OfferForm({
 
 // "1 crédito por ronda" o, si el anfitrión recibe distinto de lo que paga el
 // invitado (Premium con green fee, 0024), "tu invitado paga 1 · tú recibes 2".
-function textoCreditos(
-  club: Parameters<typeof creditosOferta>[0] & Parameters<typeof creditosAnfitrion>[0],
-  greenFeePaga: GreenFeePaga | null,
-) {
-  const paga = creditosOferta(club, greenFeePaga);
-  const recibe = creditosAnfitrion(club, greenFeePaga);
+function textoCreditos(club: Parameters<typeof creditosOferta>[0]) {
+  const paga = creditosOferta(club);
+  const recibe = creditosAnfitrion(club);
   const c = (n: number) => `${n} ${n === 1 ? "crédito" : "créditos"}`;
   if (paga === recibe) return `${c(paga)} por ronda`;
   return `tu invitado paga ${c(paga)} · tú recibes ${c(recibe)}`;

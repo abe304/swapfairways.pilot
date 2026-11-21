@@ -1,15 +1,17 @@
 // Niveles de club y modalidad de acceso (ver migración 0016).
 //
 // - Nivel: cuánto vale una salida en el club. Fija los créditos por ronda.
-// - Acceso: cómo entra un invitado. En clubes con green fee o abiertos, cada
-//   oferta dice quién paga el green fee: si lo paga el invitado la ronda
-//   cuesta 1 crédito; si lo cubre el anfitrión, cuesta lo del nivel.
+// - Acceso: cómo entra un invitado. En clubes con pase, la ronda vale lo del
+//   nivel. En clubes con green fee o abiertos, el invitado SIEMPRE paga el
+//   green fee directo en el club y la ronda le cuesta 1 crédito; el anfitrión
+//   nunca lo cubre (migración 0025).
 // - Lo que recibe el anfitrión es lo mismo que paga el invitado, salvo en
-//   Premium con green fee pagado por el invitado: recibe 2 (migración 0024).
+//   Premium con green fee: recibe 2 (0024). Premium abierto: recibe 1 (0025).
 
 export type ClubNivel = "premium" | "gold" | "silver";
 export type ClubAcceso = "pase" | "green_fee" | "abierto";
-export type GreenFeePaga = "anfitrion" | "invitado";
+/** Quién paga el green fee: siempre el invitado (0025). */
+export type GreenFeePaga = "invitado";
 
 export const NIVELES: { value: ClubNivel; label: string; creditos: number; descripcion: string }[] = [
   { value: "premium", label: "Premium", creditos: 3, descripcion: "Campo de alto valor, muy difícil conseguir quien te invite" },
@@ -23,10 +25,10 @@ export const ACCESOS: { value: ClubAcceso; label: string; descripcion: string }[
   { value: "abierto", label: "Abierto", descripcion: "Cualquiera puede reservar un tee time." },
 ];
 
-/** Créditos que cuesta una ronda si el invitado paga el green fee (clubes green_fee/abierto). */
+/** Créditos que cuesta una ronda en clubes con green fee o abiertos. */
 export const CREDITOS_GREEN_FEE_INVITADO = 1;
 
-/** Lo que recibe el anfitrión de un Premium cuando el invitado paga el green fee (0024). */
+/** Lo que recibe el anfitrión de un Premium con green fee (0024). No aplica a Premium abierto. */
 export const CREDITOS_ANFITRION_PREMIUM_GREEN_FEE = 2;
 
 export function creditosPorNivel(nivel: ClubNivel | null | undefined): number {
@@ -41,40 +43,37 @@ export function accesoLabel(acceso: ClubAcceso | null | undefined): string {
   return ACCESOS.find((a) => a.value === acceso)?.label ?? "Pase de invitado";
 }
 
-/** ¿En este club el anfitrión elige quién paga el green fee? */
-export function seEligeGreenFee(acceso: ClubAcceso | null | undefined): boolean {
+/** ¿En este club el invitado paga green fee? (clubes con green fee o abiertos) */
+export function invitadoPagaGreenFee(acceso: ClubAcceso | null | undefined): boolean {
   return acceso === "green_fee" || acceso === "abierto";
 }
 
+type ClubReglas = {
+  costo_creditos?: number | null;
+  acceso?: ClubAcceso | null;
+  nivel?: ClubNivel | null;
+} | null | undefined;
+
 /**
  * Créditos que cuesta unirse a una oferta. Misma regla que
- * create_join_request en la base: en clubes green_fee/abierto, si el invitado
- * paga el green fee (o la oferta no lo dice) cuesta 1; si no, lo del club.
+ * create_join_request en la base: en clubes de pase, lo del nivel; en clubes
+ * con green fee o abiertos, 1 (el invitado paga el green fee).
  */
-export function creditosOferta(
-  club: { costo_creditos?: number | null; acceso?: ClubAcceso | null } | null | undefined,
-  greenFeePaga: GreenFeePaga | null | undefined,
-): number {
-  const costo = club?.costo_creditos ?? 1;
-  if (seEligeGreenFee(club?.acceso) && (greenFeePaga ?? "invitado") === "invitado") {
-    return CREDITOS_GREEN_FEE_INVITADO;
-  }
-  return costo;
+export function creditosOferta(club: ClubReglas): number {
+  if (invitadoPagaGreenFee(club?.acceso)) return CREDITOS_GREEN_FEE_INVITADO;
+  return club?.costo_creditos ?? 1;
 }
 
 /**
- * Créditos que recibe el anfitrión cuando se juega la ronda. Misma regla que
- * create_join_request (0024): igual a lo que paga el invitado, salvo en
- * Premium con green fee pagado por el invitado, donde recibe 2.
+ * Créditos que recibe el anfitrión cuando se juega la ronda. Igual a lo que
+ * paga el invitado, salvo en Premium con green fee, donde recibe 2 (0024).
+ * Un Premium abierto da solo 1 (0025).
  */
-export function creditosAnfitrion(
-  club: { costo_creditos?: number | null; acceso?: ClubAcceso | null; nivel?: ClubNivel | null } | null | undefined,
-  greenFeePaga: GreenFeePaga | null | undefined,
-): number {
-  if (seEligeGreenFee(club?.acceso) && (greenFeePaga ?? "invitado") === "invitado") {
-    return club?.nivel === "premium" ? CREDITOS_ANFITRION_PREMIUM_GREEN_FEE : CREDITOS_GREEN_FEE_INVITADO;
+export function creditosAnfitrion(club: ClubReglas): number {
+  if (club?.acceso === "green_fee" && club?.nivel === "premium") {
+    return CREDITOS_ANFITRION_PREMIUM_GREEN_FEE;
   }
-  return creditosOferta(club, greenFeePaga);
+  return creditosOferta(club);
 }
 
 export const NIVEL_ESTILOS: Record<ClubNivel, string> = {

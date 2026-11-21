@@ -29,7 +29,7 @@ import dotenv from "dotenv";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../lib/supabase/types";
 import { insertOffers, totalCostos, type Costos, type OfferInsert } from "../lib/offers";
-import { creditosOferta } from "../lib/niveles";
+import { creditosAnfitrion, creditosOferta } from "../lib/niveles";
 import {
   HOSTED_OFFERS_SELECT,
   MY_REQUESTS_SELECT,
@@ -544,12 +544,13 @@ async function main() {
   const saldoFinal = await leerSaldos();
   const delta = new Map<string, number>();
   for (const a of jugadas) {
-    // Las ofertas de la simulación no dicen quién paga el green fee: en clubes
-    // con green fee o abiertos se cobra lo de "lo paga el invitado".
-    const costo = creditosOferta(a.offer.plan.club, null);
+    // En clubes con green fee o abiertos el invitado paga 1; en Premium con
+    // green fee el anfitrión recibe 2 (0024/0025).
+    const costo = creditosOferta(a.offer.plan.club);
+    const recibe = creditosAnfitrion(a.offer.plan.club);
     const g = solicitudes.find((s) => s.requestId === a.requestId)!.guest.id;
     delta.set(g, (delta.get(g) ?? 0) - costo);
-    delta.set(a.offer.plan.host.id, (delta.get(a.offer.plan.host.id) ?? 0) + costo);
+    delta.set(a.offer.plan.host.id, (delta.get(a.offer.plan.host.id) ?? 0) + recibe);
   }
   for (const s of [...hosts, ...guests]) {
     const esperado = (saldoInicial.get(s.id) ?? 0) + (delta.get(s.id) ?? 0);

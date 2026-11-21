@@ -66,8 +66,8 @@ function OfferCard({ offer }: { offer: OfferRow }) {
         <div className="mt-3 flex flex-wrap gap-2">
           {club ? <NivelBadge nivel={club.nivel} className="self-center" /> : null}
           <Badge tone="gold">
-            {creditosOferta(club, offer.green_fee_paga)}{" "}
-            {creditosOferta(club, offer.green_fee_paga) === 1 ? "crédito" : "créditos"}
+            {creditosOferta(club)}{" "}
+            {creditosOferta(club) === 1 ? "crédito" : "créditos"}
           </Badge>
           {offer.caddie_compartido ? <Badge>Caddie compartido</Badge> : null}
           {offer.carrito_compartido ? <Badge>Carrito compartido</Badge> : null}

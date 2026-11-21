@@ -1,5 +1,5 @@
 import { NivelBadge } from "@/components/NivelBadge";
-import { accesoLabel, creditosAnfitrion, creditosOferta, seEligeGreenFee, type ClubAcceso, type ClubNivel } from "@/lib/niveles";
+import { accesoLabel, creditosAnfitrion, creditosOferta, invitadoPagaGreenFee, type ClubAcceso, type ClubNivel } from "@/lib/niveles";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -92,22 +92,24 @@ export default async function OfertaDetallePage({
     },
   ].filter((d) => d.monto > 0);
 
-  // Si el green fee no tiene costo para el invitado, se dice por qué, para
-  // que se entienda que no falta en la cuenta.
+  // Si el green fee no aparece en la cuenta, se dice por qué: en clubes de
+  // pase no tiene costo; en clubes con green fee lo paga el invitado (el
+  // anfitrión nunca lo cubre, 0025) pero el anfitrión no indicó el monto.
   const greenFeeCapturado = (offer.costo_green_fee ?? 0) > 0;
   const notaGreenFee = greenFeeCapturado
     ? null
     : club?.acceso === "pase"
       ? "Sin costo: entras con el pase de invitado del anfitrión"
-      : seEligeGreenFee(club?.acceso) && offer.green_fee_paga === "anfitrion"
-        ? "Lo cubre el anfitrión"
+      : invitadoPagaGreenFee(club?.acceso)
+        ? "Lo pagas directo en el club; el anfitrión no indicó el monto"
         : null;
+  const montoGreenFee = club?.acceso === "pase" ? "$0" : "Por confirmar";
   const totalInvitado = offer.costo_estimado ?? totalCostos(offer as Costos, compartidos);
 
   const isHost = offer.host_id === profile.id;
   const cuposLibres = offer.pases_disponibles - offer.pases_confirmados;
-  const costoCreditos = creditosOferta(club, offer.green_fee_paga);
-  const creditosHost = creditosAnfitrion(club, offer.green_fee_paga);
+  const costoCreditos = creditosOferta(club);
+  const creditosHost = creditosAnfitrion(club);
   const { data: documentosClub } = await supabase
     .from("club_documentos")
     .select("id, tipo, titulo, url")
@@ -200,13 +202,7 @@ export default async function OfertaDetallePage({
               ? `Recibes ${creditosHost} ${creditosHost === 1 ? "crédito" : "créditos"} por invitado`
               : `Vale ${costoCreditos} ${costoCreditos === 1 ? "crédito" : "créditos"}`}
           </Badge>
-          {seEligeGreenFee(club?.acceso) ? (
-            <Badge>
-              {offer.green_fee_paga === "anfitrion"
-                ? "El anfitrión cubre el green fee"
-                : "El green fee lo paga el invitado"}
-            </Badge>
-          ) : null}
+          {invitadoPagaGreenFee(club?.acceso) ? <Badge>El green fee lo paga el invitado</Badge> : null}
         </div>
 
         <div className="mt-4 border-t border-swf-verde/10 pt-4">
@@ -237,7 +233,7 @@ export default async function OfertaDetallePage({
                   Green fee
                   <span className="block text-xs text-swf-verde/60">{notaGreenFee}</span>
                 </span>
-                <span className="shrink-0 text-swf-verde/70">$0</span>
+                <span className="shrink-0 text-swf-verde/70">{montoGreenFee}</span>
               </li>
             ) : null}
             {desglose.map((d) => (
@@ -256,7 +252,7 @@ export default async function OfertaDetallePage({
             {notaGreenFee
               ? club?.acceso === "pase"
                 ? "El green fee no tiene costo porque entras con el pase de invitado del anfitrión. "
-                : "El green fee lo cubre el anfitrión. "
+                : "El green fee lo pagas directo en el club; el anfitrión no indicó el monto. "
               : ""}
             {totalInvitado > 0
               ? `El anfitrión no desglosó ${notaGreenFee ? "el resto del" : "este"} monto. Pregúntale qué incluye cuando coordinen la ronda.`
