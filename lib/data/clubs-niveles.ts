@@ -72,7 +72,7 @@ export const NIVELES_CLUBES: Record<string, { nivel: ClubNivel; acceso: ClubAcce
   "Club Campestre de Querétaro": { nivel: "gold", acceso: "pase" },
   "Club Campestre de Saltillo": { nivel: "gold", acceso: "pase" },
   "Club Campestre de San Luis": { nivel: "gold", acceso: "pase" },
-  "Club Campestre de la Ciudad de México": { nivel: "premium", acceso: "pase" },
+  "Club Campestre de la Ciudad de México": { nivel: "premium", acceso: "green_fee" }, // cambiado en /admin el 2026-11-21
   "Club De Golf Alquerias": { nivel: "gold", acceso: "pase" },
   "Club De Golf Guamúchil": { nivel: "silver", acceso: "pase" },
   "Club Deportivo Campestre Torreón": { nivel: "gold", acceso: "pase" },
