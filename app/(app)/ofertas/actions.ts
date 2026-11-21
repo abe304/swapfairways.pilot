@@ -88,7 +88,7 @@ export async function createOffer(_prevState: unknown, formData: FormData) {
 
   const supabase = await createClient();
 
-  // En clubes con green fee o abiertos el green fee siempre lo paga el
+  // En clubes con green fee o públicos el green fee siempre lo paga el
   // invitado: el anfitrión nunca lo cubre (migración 0025).
   const { data: club } = await supabase.from("clubs").select("acceso").eq("id", club_id).single();
   const green_fee_paga: GreenFeePaga | null = invitadoPagaGreenFee(club?.acceso as ClubAcceso | undefined)

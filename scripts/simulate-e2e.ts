@@ -544,7 +544,7 @@ async function main() {
   const saldoFinal = await leerSaldos();
   const delta = new Map<string, number>();
   for (const a of jugadas) {
-    // En clubes con green fee o abiertos el invitado paga 1; en Premium con
+    // En clubes con green fee o públicos el invitado paga 1; en Premium con
     // green fee el anfitrión recibe 2 (0024/0025).
     const costo = creditosOferta(a.offer.plan.club);
     const recibe = creditosAnfitrion(a.offer.plan.club);

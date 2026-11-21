@@ -112,7 +112,7 @@ export const NIVELES_CLUBES: Record<string, { nivel: ClubNivel; acceso: ClubAcce
   "Club de Golf México": { nivel: "premium", acceso: "pase" },
   "Club de Golf Pachuca": { nivel: "gold", acceso: "pase" },
   "Club de Golf Providencia": { nivel: "gold", acceso: "pase" },
-  "Club de Golf Pulgas Pandas": { nivel: "silver", acceso: "abierto" },
+  "Club de Golf Pulgas Pandas": { nivel: "silver", acceso: "green_fee" }, // ajustado el 2026-11-21
   "Club de Golf Punta Tiburon": { nivel: "gold", acceso: "pase" },
   "Club de Golf Rancho Viejo": { nivel: "gold", acceso: "pase" },
   "Club de Golf Real de Catorce": { nivel: "gold", acceso: "pase" },
@@ -126,7 +126,7 @@ export const NIVELES_CLUBES: Record<string, { nivel: ClubNivel; acceso: ClubAcce
   "Club de Golf Tres Marías": { nivel: "premium", acceso: "pase" },
   "Club de Golf Tres Vidas Acapulco": { nivel: "premium", acceso: "pase" },
   "Club de Golf Valle Escondido": { nivel: "gold", acceso: "pase" },
-  "Club de Golf Valle Imperial": { nivel: "silver", acceso: "abierto" },
+  "Club de Golf Valle Imperial": { nivel: "silver", acceso: "green_fee" }, // ajustado en /admin el 2026-11-21
   "Club de Golf Villa Rica": { nivel: "silver", acceso: "abierto" },
   "Club de Golf Vista Hermosa": { nivel: "silver", acceso: "abierto" },
   "Club de Golf Xalapa": { nivel: "silver", acceso: "abierto" },

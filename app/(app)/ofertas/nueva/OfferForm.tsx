@@ -38,7 +38,7 @@ export function OfferForm({
   const [clubSel, setClubSel] = useState<Club | null>(
     () => clubs.find((c) => c.id === defaultClubId) ?? null,
   );
-  // En clubes con green fee o abiertos el invitado siempre paga el green fee (0025).
+  // En clubes con green fee o públicos el invitado siempre paga el green fee (0025).
   const pagaGreenFee = invitadoPagaGreenFee(clubSel?.acceso);
   // Se guarda como texto para poder vaciar el campo mientras se escribe; se
   // ajusta a 1–3 al salir del campo.

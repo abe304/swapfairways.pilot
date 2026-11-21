@@ -45,7 +45,7 @@ export function ClubAdminForm({ club }: { club: Club }) {
               ))}
             </Select>
             <p className="mt-1 text-xs text-swf-verde/60">
-              Con green fee o abierto, si el invitado paga el green fee la ronda cuesta 1 crédito.
+              Con green fee o público, el invitado paga el green fee y la ronda cuesta 1 crédito.
             </p>
           </FormField>
           <FormField label="Tipo" htmlFor="tipo">
