@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { VideoCreditos } from "@/components/VideoCreditos";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth";
 import { ClubPhoto } from "@/components/ClubPhoto";
@@ -239,24 +240,31 @@ export default async function Home() {
             ))}
           </div>
 
-          {/* id="video": los correos de bienvenida enlazan aquí. */}
-          <div id="video" className="mt-8 scroll-mt-6">
-            <p className="mb-3 text-sm font-medium text-swf-verde/70">Míralo en 40 segundos</p>
-            <video
-              className="aspect-video w-full rounded-2xl bg-swf-verde shadow-sm ring-1 ring-swf-verde/10"
-              src="/video/swf-explicativo.mp4"
-              poster="/video/swf-explicativo-portada.jpg"
-              controls
-              playsInline
-              preload="none"
-              aria-label="Video: cómo funciona SwapFairways"
-            >
-              Tu navegador no puede reproducir este video.{" "}
-              <a href="/video/swf-explicativo.mp4" className="underline">
-                Descárgalo aquí
-              </a>
-              .
-            </video>
+          <div className="mt-8 grid gap-6 md:grid-cols-2">
+            {/* id="video": los correos de bienvenida enlazan aquí. */}
+            <div id="video" className="scroll-mt-6">
+              <p className="mb-3 text-sm font-medium text-swf-verde/70">Míralo en 40 segundos</p>
+              <video
+                className="aspect-video w-full rounded-2xl bg-swf-verde shadow-sm ring-1 ring-swf-verde/10"
+                src="/video/swf-explicativo.mp4"
+                poster="/video/swf-explicativo-portada.jpg"
+                controls
+                playsInline
+                preload="none"
+                aria-label="Video: cómo funciona SwapFairways"
+              >
+                Tu navegador no puede reproducir este video.{" "}
+                <a href="/video/swf-explicativo.mp4" className="underline">
+                  Descárgalo aquí
+                </a>
+                .
+              </video>
+            </div>
+
+            <div id="video-creditos" className="scroll-mt-6">
+              <p className="mb-3 text-sm font-medium text-swf-verde/70">Cómo funcionan los créditos</p>
+              <VideoCreditos />
+            </div>
           </div>
         </section>
 

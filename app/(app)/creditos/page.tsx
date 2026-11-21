@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { Card, Badge } from "@/components/ui/Card";
+import { VideoCreditos } from "@/components/VideoCreditos";
 
 const TIPO_LABEL: Record<string, string> = {
   bienvenida: "Crédito de bienvenida",
@@ -36,6 +37,11 @@ export default async function CreditosPage() {
           {profile.creditos_balance} créditos
         </p>
       </Card>
+
+      <section>
+        <h2 className="mb-3 text-lg font-semibold text-swf-verde">¿Cómo funcionan los créditos?</h2>
+        <VideoCreditos />
+      </section>
 
       <section>
         <h2 className="mb-3 text-lg font-semibold text-swf-verde">Historial de movimientos</h2>
