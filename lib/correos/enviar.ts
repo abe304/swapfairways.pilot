@@ -414,7 +414,9 @@ export async function revisionDiaria(sitio: string) {
 // Seguimiento: S1, S2 y S3 (una sola vez por persona)
 // ============================================================
 // * S1: entre 7 y 13 días después de registrarse, con club en el perfil y
-//   sin haber publicado nunca una oferta.
+//   sin haber publicado nunca una oferta. Quien se registró antes del
+//   20-nov-2026 (cuando se programó el S1) lo recibe aunque pase el día 13.
+const INICIO_S1 = Date.parse("2026-11-20T06:00:00Z"); // 20-nov 00:00 CDMX
 // * S2: su primera ronda como anfitrión se marcó jugada en los últimos 3 días.
 // * S3: su primera ronda como invitado se marcó jugada hace 1 a 4 días (un
 //   día después del T8 de reseña, para no mandarle dos correos juntos).
@@ -463,7 +465,11 @@ async function revisarSeguimiento(cliente: Db, sitio: string, solicitudes: Fila[
   for (const perfil of perfiles.values()) {
     const id = perfil.id as string;
     const dias = (ahora - new Date(perfil.created_at as string).getTime()) / DIA_MS;
-    if (dias < 7 || dias >= 14 || !perfil.club_id || anfitriones.has(id) || !recibe(id)) continue;
+    // Quien se registró antes de que existiera el S1 ya pasó su ventana:
+    // a esa gente se le manda una vez aunque lleve más de 13 días.
+    const antesDelS1 = new Date(perfil.created_at as string).getTime() < INICIO_S1;
+    if (dias < 7 || (dias >= 14 && !antesDelS1)) continue;
+    if (!perfil.club_id || anfitriones.has(id) || !recibe(id)) continue;
     const clubId = perfil.club_id as string;
     const nivel = (clubs.get(clubId)?.nivel as ClubNivel | undefined) ?? null;
     const otrosClubes = new Set(abiertas.map((o) => o.club_id as string));

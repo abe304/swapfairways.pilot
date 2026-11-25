@@ -240,7 +240,7 @@ Una red así solo funciona si sus socios la usan, y quiero que valga la pena par
 
 ## Cómo está programado (S1, S2 y S3)
 - **Cuándo:** en la misma revisión diaria de `/api/cron/correos`, una sola vez por persona.
-  - **S1:** entre 7 y 13 días después de registrarse, si tiene club en su perfil y nunca ha publicado una oferta. Si otro socio ya publicó en su club, el asunto cambia a "Tu oferta en {club} todavía no está en la red"; si no hay ningún club con ofertas, dice que la red apenas arranca.
+  - **S1:** entre 7 y 13 días después de registrarse, si tiene club en su perfil y nunca ha publicado una oferta. Quien se registró antes del 20-nov-2026 (cuando se programó) lo recibe una vez aunque ya pasó el día 13. Si otro socio ya publicó en su club, el asunto cambia a "Tu oferta en {club} todavía no está en la red"; si no hay ningún club con ofertas, dice que la red apenas arranca.
   - **S2:** su primera ronda como anfitrión se marcó jugada en los últimos 3 días.
   - **S3:** su primera ronda como invitado se marcó jugada hace 1 a 4 días (un día después del T8 de reseña, para no mandarle dos correos juntos).
 - **Baja:** los S llevan al pie "Dejar de recibirlos" y los encabezados `List-Unsubscribe` (botón de baja de Gmail/Apple Mail). El enlace va firmado con `CORREOS_SECRET` o, si no existe, `CRON_SECRET`; no pide sesión. Guarda `profiles.correos_seguimiento = false` (migración 0023). La columna no está entre las que el usuario puede editar: solo la cambia el servidor. Los T1–T8 siguen llegando.
