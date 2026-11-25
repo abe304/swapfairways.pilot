@@ -1,9 +1,9 @@
 // Envío de los correos de ciclo de vida. Ver docs/correos-ciclo-de-vida.md.
 //
 // * T1 y T2 se mandan en el momento (registro y primera oferta).
-// * T4, T7 y T8, y los de seguimiento S1–S3, los manda revisionDiaria(),
+// * T4, T7 y T8, y los de seguimiento S0–S3, los manda revisionDiaria(),
 //   que corre una vez al día desde /api/cron/correos (Vercel Cron).
-// * S1–S3 respetan profiles.correos_seguimiento (migración 0023) y llevan
+// * S0–S3 respetan profiles.correos_seguimiento (migración 0023) y llevan
 //   enlace de baja (lib/correos/baja.ts). T1–T8 siempre se mandan.
 //
 // Cada correo se registra en correos_enviados (migración 0022) ANTES de
@@ -25,6 +25,7 @@ import {
   t7RondaManana,
   t8MarcarJugada,
   t8Resena,
+  s0SinClub,
   s1SinOfertas,
   s2PrimerHosteo,
   s3PrimeraSalida,
@@ -35,7 +36,7 @@ const REMITENTE = "Abraham de SwapFairways";
 const DIA_MS = 24 * 60 * 60 * 1000;
 
 type Db = SupabaseClient<Database>;
-export type TipoCorreo = "T1" | "T2" | "T4" | "T7" | "T8" | "S1" | "S2" | "S3";
+export type TipoCorreo = "T1" | "T2" | "T4" | "T7" | "T8" | "S0" | "S1" | "S2" | "S3";
 
 // Cliente que puede leer todo (service role). En modo demo, el simulado.
 async function db(): Promise<Db> {
@@ -240,7 +241,7 @@ export async function revisionDiaria(sitio: string) {
   try {
     await revisarSeguimiento(cliente, sitio, solicitudes, contar);
   } catch (err) {
-    console.error("[correos] Falló la revisión de seguimiento (S1–S3):", err);
+    console.error("[correos] Falló la revisión de seguimiento (S0–S3):", err);
   }
 
   if (solicitudes.length === 0) return { hoy, resumen };
@@ -411,8 +412,9 @@ export async function revisionDiaria(sitio: string) {
 }
 
 // ============================================================
-// Seguimiento: S1, S2 y S3 (una sola vez por persona)
+// Seguimiento: S0, S1, S2 y S3 (una sola vez por persona)
 // ============================================================
+// * S0: a partir del día 2 sin club en el perfil (sin tope: sale una vez).
 // * S1: entre 7 y 13 días después de registrarse, con club en el perfil y
 //   sin haber publicado nunca una oferta. Quien se registró antes del
 //   20-nov-2026 (cuando se programó el S1) lo recibe aunque pase el día 13.
@@ -440,7 +442,7 @@ async function revisarSeguimiento(cliente: Db, sitio: string, solicitudes: Fila[
   const ofertas = (ofertasRaw ?? []) as Fila[];
   const ofertaPorId = new Map(ofertas.map((o) => [o.id as string, o]));
 
-  const { data: clubsRaw } = await cliente.from("clubs").select("id, nombre, nivel");
+  const { data: clubsRaw } = await cliente.from("clubs").select("id, nombre, nivel, acceso");
   const clubs = new Map(((clubsRaw ?? []) as Fila[]).map((c) => [c.id as string, c]));
   const clubNombre = (id: unknown) => (clubs.get(id as string)?.nombre as string) ?? "tu club";
 
@@ -456,6 +458,24 @@ async function revisarSeguimiento(cliente: Db, sitio: string, solicitudes: Fila[
         : undefined,
     };
   };
+
+  // ---------- S0 ----------
+  const clubesPublicos = [...clubs.values()].filter((c) => c.acceso === "abierto").length;
+  for (const perfil of perfiles.values()) {
+    const id = perfil.id as string;
+    const dias = (ahora - new Date(perfil.created_at as string).getTime()) / DIA_MS;
+    if (dias < 2 || perfil.club_id || !recibe(id)) continue;
+    const { bajaHref, headers } = conBaja(id);
+    contar(
+      "S0",
+      await enviarUnaVez(cliente, {
+        userId: id,
+        tipo: "S0",
+        headers,
+        correo: s0SinClub({ nombre: (perfil.nombre as string) ?? "", sitio, clubesPublicos, bajaHref }),
+      }),
+    );
+  }
 
   // ---------- S1 ----------
   const anfitriones = new Set(ofertas.map((o) => o.host_id as string));

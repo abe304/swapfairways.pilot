@@ -35,6 +35,7 @@ Versión 1 · 2026-11-19 · Para revisar antes de programar.
 | T7 | Tu ronda es mañana | 24 h antes (a los dos) | Solo con fecha fija | Ver detalles | Rondas que no se cancelan | **Programado** |
 | T8 | ¿Cómo estuvo la ronda? | Día siguiente | Anfitrión: marcar jugada · los dos: reseña | Marcar jugada / Dejar reseña | % jugadas marcadas en 48 h | **Programado** |
 | T9 | Tu invitado jugó: ganaste créditos | Al pagar el referido | — | Invitar a otro socio | Referidos por socio | Nuevo |
+| S0 | Te falta un paso para usar SwapFairways | Día 2 sin club en el perfil | Solo una vez; se cancela si agrega club | Agregar mi club | % que agrega club después de S0 | **Programado** (2026-11-24) |
 | S1 | Tu club es parte de la red | Día 7 sin ofertas | Se cancela si publica | Publicar oferta | % que publica después de S1 | Nuevo (tu punto 2) |
 | S2 | Gracias por recibir a tu primer invitado | 1a ronda jugada como anfitrión | Solo una vez | Responder con feedback | % que responde | Nuevo (tu punto 3) |
 | S3 | Tu primera salida con SwapFairways | 1a ronda jugada como invitado | Solo una vez | Publicar una oferta en tu club | % que publica después | Nuevo (tu punto 4) |
@@ -165,6 +166,22 @@ Cada socio nuevo es un club más donde puedes jugar. Tu código sigue activo: **
 
 **[Invitar a otro socio]**
 
+### S0 · Sin club en el perfil
+**Asunto:** Te falta un paso para usar SwapFairways
+**Preencabezado:** Agrega tu club y activa tus 3 créditos.
+
+Hola {nombre}:
+
+Vi que todavía no tienes un club en tu perfil, y sin él no puedes usar la red. Te cuento rápido cómo funciona:
+
+1. Agregas tu club a tu perfil.
+2. Publicas una ronda: una fecha y cuántos lugares tienes. **Con la primera se activan tus 3 créditos de bienvenida.**
+3. Usas tus créditos para jugar en los clubes de otros socios.
+
+**¿No eres socio de un club privado?** Por ahora elige como tu club un campo **Público** (hay {n} en el directorio). Ahí cada invitado paga su green fee y la ronda le cuesta 1 crédito, así que puedes recibir a otros socios y usar tus créditos desde hoy. Cuando entres a un club privado, lo cambias en tu perfil.
+
+**[Agregar mi club]** · Ver el directorio de clubes
+
 ### S1 · Día 7 sin ofertas (tu punto 2)
 **Asunto:** {club} todavía no tiene ofertas en la red
 **Preencabezado:** Una oferta activa tus 3 créditos.
@@ -238,8 +255,9 @@ Una red así solo funciona si sus socios la usan, y quiero que valga la pena par
 - **Rondas con fecha flexible:** no reciben T7 ni T8.
 - **Remitente:** "Abraham de SwapFairways", con `reply_to` al correo de `NEXT_PUBLIC_CONTACT_EMAIL`.
 
-## Cómo está programado (S1, S2 y S3)
+## Cómo está programado (S0, S1, S2 y S3)
 - **Cuándo:** en la misma revisión diaria de `/api/cron/correos`, una sola vez por persona.
+  - **S0:** a partir del día 2 después de registrarse, si no tiene club en su perfil. Sin tope de días (a quien ya estaba registrado sin club le llega en la siguiente revisión).
   - **S1:** entre 7 y 13 días después de registrarse, si tiene club en su perfil y nunca ha publicado una oferta. Quien se registró antes del 20-nov-2026 (cuando se programó) lo recibe una vez aunque ya pasó el día 13. Si otro socio ya publicó en su club, el asunto cambia a "Tu oferta en {club} todavía no está en la red"; si no hay ningún club con ofertas, dice que la red apenas arranca.
   - **S2:** su primera ronda como anfitrión se marcó jugada en los últimos 3 días.
   - **S3:** su primera ronda como invitado se marcó jugada hace 1 a 4 días (un día después del T8 de reseña, para no mandarle dos correos juntos).

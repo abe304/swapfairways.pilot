@@ -1,4 +1,4 @@
-// Plantillas de los correos de ciclo de vida (T1, T2, T4, T7, T8, S1–S3).
+// Plantillas de los correos de ciclo de vida (T1, T2, T4, T7, T8, S0–S3).
 // Textos aprobados en docs/correos-ciclo-de-vida.md: si cambias uno aquí,
 // cámbialo también allá.
 import { escapeHtml as e } from "@/lib/email";
@@ -198,8 +198,38 @@ export function t8Resena(params: {
 }
 
 // ============================================================
-// Seguimiento (S1–S4). Llevan enlace de baja; T1–T8 no.
+// Seguimiento (S0–S4). Llevan enlace de baja; T1–T8 no.
 // ============================================================
+
+// ---------- S0 · Sin club en el perfil ----------
+export function s0SinClub(params: {
+  nombre: string;
+  sitio: string;
+  clubesPublicos: number; // campos públicos en el directorio
+  bajaHref: string | null;
+}): Correo {
+  const { nombre, sitio, clubesPublicos } = params;
+  const paso = (n: number, texto: string) =>
+    `<tr><td style="vertical-align:top;padding:0 10px 10px 0;color:${DORADO};font-weight:bold;">${n}.</td><td style="padding:0 0 10px;line-height:1.5;">${texto}</td></tr>`;
+  const cuantos = clubesPublicos > 0 ? ` (hay ${clubesPublicos} en el directorio)` : "";
+  return {
+    subject: "Te falta un paso para usar SwapFairways",
+    html: plantilla(
+      "Agrega tu club y activa tus 3 créditos.",
+      `${hola(nombre)}
+      ${p("Vi que todavía no tienes un club en tu perfil, y sin él no puedes usar la red. Te cuento rápido cómo funciona:")}
+      <table role="presentation" style="border-collapse:collapse;margin:0 0 14px;font-size:15px;color:${VERDE};">
+        ${paso(1, "Agregas tu club a tu perfil.")}
+        ${paso(2, "Publicas una ronda: una fecha y cuántos lugares tienes. <strong>Con la primera se activan tus 3 créditos de bienvenida.</strong>")}
+        ${paso(3, "Usas tus créditos para jugar en los clubes de otros socios.")}
+      </table>
+      ${p(`<strong>¿No eres socio de un club privado?</strong> Por ahora elige como tu club un campo <strong>Público</strong>${cuantos}. Ahí cada invitado paga su green fee y la ronda le cuesta 1 crédito, así que puedes recibir a otros socios y usar tus créditos desde hoy. Cuando entres a un club privado, lo cambias en tu perfil.`)}
+      ${boton("Agregar mi club", `${sitio}/perfil`)}
+      <p style="margin:-10px 0 14px;font-size:14px;"><a href="${e(`${sitio}/clubes`)}" style="color:${VERDE};">Ver el directorio de clubes</a></p>`,
+      pieBaja(params.bajaHref),
+    ),
+  };
+}
 
 // ---------- S1 · Día 7 sin ofertas ----------
 export function s1SinOfertas(params: {
