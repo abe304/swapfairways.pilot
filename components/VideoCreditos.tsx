@@ -1,4 +1,4 @@
-// Video "¿Cómo funcionan los créditos?" (52 s). Se muestra en la home y en
+// Video "¿Cómo funcionan los créditos?" (69 s, con voz). Se muestra en la home y en
 // /creditos. Si cambian las reglas de créditos (lib/niveles.ts), hay que
 // rehacer el video.
 export function VideoCreditos() {
