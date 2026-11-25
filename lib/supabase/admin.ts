@@ -6,8 +6,11 @@ import type { Database } from "./types";
 // código que corra en el navegador ni exponer SUPABASE_SERVICE_ROLE_KEY
 // con el prefijo NEXT_PUBLIC_.
 export function createAdminClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // trim(): si al pegar la clave en Vercel se cuela un salto de línea o un
+  // espacio, fetch rechaza el encabezado ("invalid header value") y ningún
+  // correo sale. Pasó en nov-2026.
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 
   if (!url || !serviceRoleKey) {
     throw new Error(
