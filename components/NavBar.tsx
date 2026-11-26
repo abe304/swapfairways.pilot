@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { getCurrentProfile } from "@/lib/auth";
 import { signOut } from "@/app/(auth)/actions";
+import { createClient } from "@/lib/supabase/server";
 
 const links = [
   { href: "/ofertas", label: "Explorar" },
@@ -41,6 +42,18 @@ export async function NavBar() {
     );
   }
 
+  // Liga "Equipo" para miembros del equipo (migración 0026) y admins.
+  let esEquipo = profile.is_admin;
+  if (!esEquipo) {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("equipo_miembros")
+      .select("activo")
+      .eq("profile_id", profile.id)
+      .maybeSingle();
+    esEquipo = !!data?.activo;
+  }
+
   return (
     <header className="border-b border-swf-verde/10 bg-swf-verde text-swf-crema">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
@@ -53,6 +66,11 @@ export async function NavBar() {
               {link.label}
             </Link>
           ))}
+          {esEquipo ? (
+            <Link href={profile.is_admin ? "/admin/equipo" : "/equipo"} className="text-swf-dorado hover:underline">
+              Equipo
+            </Link>
+          ) : null}
           {profile.is_admin ? (
             <Link href="/admin" className="text-swf-dorado hover:underline">
               Admin

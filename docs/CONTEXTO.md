@@ -7,7 +7,7 @@ Piloto web para que socios de clubes de golf en México intercambien salidas (te
 
 ## Stack y dónde vive
 - Next.js 16 (App Router) + TypeScript + Tailwind v4. **Esta versión de Next tiene cambios incompatibles con lo que Claude sabe**: lee `node_modules/next/dist/docs/` antes de escribir código nuevo (ver `AGENTS.md`).
-- Supabase (Postgres, Auth email+contraseña, RLS, Storage). Las migraciones están en `supabase/migrations/` (0001–0025) y **se corren a mano** en el SQL Editor de Supabase.
+- Supabase (Postgres, Auth email+contraseña, RLS, Storage). Las migraciones están en `supabase/migrations/` (0001–0027) y **se corren a mano** en el SQL Editor de Supabase.
 - Despliegue en Vercel: https://swapfairways-pilot.vercel.app
 - Repo: github.com/abe304/swapfairways.pilot (rama `master`).
 - Modo demo: si falta `NEXT_PUBLIC_SUPABASE_URL` (o es un placeholder), la app usa un backend simulado en `lib/mock/*`. Usuario demo: `test@test.com` / `testtest`.
@@ -24,6 +24,8 @@ Piloto web para que socios de clubes de golf en México intercambien salidas (te
 - **Créditos de bienvenida (migración 0021, corrida el 2026-11-19):** los 3 créditos ya no se dan al registrarse; se activan al publicar la primera oferta (trigger en `tee_time_offers`). Quien ya los tenía los conserva.
 - **Correos de ciclo de vida:** mapa y textos en `docs/correos-ciclo-de-vida.md`. Programados (2026-11-19): T1 bienvenida, T2 créditos activados, T4 solicitud sin respuesta, T7 ronda mañana y T8 después de la ronda (`lib/correos/`, `/api/cron/correos`, Vercel Cron diario a las 8:00 de CDMX). Migración 0022 corrida y `CRON_SECRET` configurada en Vercel; desplegado el 2026-11-19 (commit `bd167e6`).
 - **Correos de seguimiento S1–S3 (2026-11-20):** S1 día 7 sin ofertas, S2 primer hosteo, S3 primera salida como invitado; salen en la misma revisión diaria. Llevan enlace de baja firmado (`/correos/baja`, `lib/correos/baja.ts`) y respetan `profiles.correos_seguimiento` (migración 0023, corrida). S0 (2026-11-24): a partir del día 2 sin club en el perfil, explica cómo funciona y sugiere elegir un campo Público por ahora. Faltan T6, T9 y S4.
+
+- **Equipo y tablero (2026-11-25):** organigrama, KPIs y registro de actividades en `docs/equipo-propuesta.md`. Páginas `/equipo` (mi semana, pipeline, finanzas) y `/admin/equipo` (tablero del fundador con KPIs reales). Correos internos E1 (lunes, check-in), E2 (martes, resumen al fundador) y E3 (compromiso vencido) en la misma revisión diaria. Por ahora los roles los ejecutan **agentes de IA** (`lib/agentes/`, cron `/api/cron/agentes` 9:00 CDMX, AI SDK + AI Gateway con Claude): trabajan solos con los datos reales y las directrices del fundador, y lo externo queda en una cola de aprobación en `/admin/equipo`. **Falta correr las migraciones `0026_equipo.sql` y `0027_agentes.sql` y activar AI Gateway en Vercel.**
 
 ## Pendientes de lanzamiento (los hace el dueño; detalle en `docs/LANZAMIENTO.md`)
 1. ~~Subir el código a GitHub y confirmar que Vercel despliegue.~~ Hecho (2026-11-09).

@@ -42,11 +42,18 @@ const TABLE_DEFAULTS: Partial<Record<MockTable, MockRow>> = {
   profile_contacts: {},
   codigos_invitacion: { usos: 0, activo: true },
   club_documentos: { tipo: "estatutos" },
+  equipo_compromisos: { hecho: false, hecho_at: null },
+  equipo_pipeline: { etapa: "identificado" },
+  equipo_directrices: { activa: true, rol: null },
+  agente_corridas: { estado: "corriendo", origen: "cron" },
+  agente_acciones: { estado: "pendiente" },
 };
 
 const UPSERT_KEY: Partial<Record<MockTable, string>> = {
   profile_contacts: "user_id",
   app_settings: "key",
+  equipo_miembros: "profile_id",
+  equipo_metas: "rol",
 };
 
 function splitTopLevel(input: string): string[] {
@@ -115,6 +122,7 @@ export class MockQueryBuilder implements PromiseLike<MockResult<unknown>> {
   private filters: Filter[] = [];
   private orderCol: string | null = null;
   private orderAsc = true;
+  private limitN: number | null = null;
   private mode: "select" | "insert" | "update" | "upsert" | "delete" = "select";
   private payload: MockRow | MockRow[] | null = null;
   private wantSingle = false;
@@ -141,6 +149,11 @@ export class MockQueryBuilder implements PromiseLike<MockResult<unknown>> {
 
   in(col: string, val: unknown[]) {
     this.filters.push({ col, op: "in", val });
+    return this;
+  }
+
+  limit(n: number) {
+    this.limitN = n;
     return this;
   }
 
@@ -172,7 +185,7 @@ export class MockQueryBuilder implements PromiseLike<MockResult<unknown>> {
     return this;
   }
 
-  upsert(payload: MockRow) {
+  upsert(payload: MockRow | MockRow[]) {
     this.mode = "upsert";
     this.payload = payload;
     return this;
@@ -256,6 +269,7 @@ export class MockQueryBuilder implements PromiseLike<MockResult<unknown>> {
           return 0;
         });
       }
+      if (this.limitN !== null) rows = rows.slice(0, this.limitN);
       return this.finish(rows);
     }
 
@@ -302,15 +316,18 @@ export class MockQueryBuilder implements PromiseLike<MockResult<unknown>> {
 
     if (this.mode === "upsert") {
       const key = UPSERT_KEY[this.table] ?? "id";
-      const payload = this.payload as MockRow;
-      const existing = table.find((r) => r[key] === payload[key]);
-      if (existing) {
-        Object.assign(existing, payload, { updated_at: nowIso() });
-        return this.finish([existing]);
-      }
-      const row: MockRow = { updated_at: nowIso(), ...payload };
-      table.push(row);
-      return this.finish([row]);
+      const items = Array.isArray(this.payload) ? (this.payload as MockRow[]) : [this.payload as MockRow];
+      const out = items.map((payload) => {
+        const existing = table.find((r) => r[key] === payload[key]);
+        if (existing) {
+          Object.assign(existing, payload, { updated_at: nowIso() });
+          return existing;
+        }
+        const row: MockRow = { updated_at: nowIso(), created_at: nowIso(), ...payload };
+        table.push(row);
+        return row;
+      });
+      return this.finish(out);
     }
 
     if (this.mode === "delete") {

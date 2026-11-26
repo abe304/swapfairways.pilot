@@ -16,7 +16,17 @@ export type MockTable =
   | "codigos_invitacion"
   | "app_settings"
   | "club_documentos"
-  | "lista_espera";
+  | "lista_espera"
+  | "equipo_miembros"
+  | "equipo_metas"
+  | "equipo_actividades"
+  | "equipo_pipeline"
+  | "equipo_checkins"
+  | "equipo_compromisos"
+  | "finanzas_movimientos"
+  | "equipo_directrices"
+  | "agente_corridas"
+  | "agente_acciones";
 
 export type MockAuthUser = { id: string; email: string; password: string };
 
@@ -228,6 +238,28 @@ function buildInitialStore(): Store {
     ],
     club_documentos: [],
     lista_espera: [],
+    // Equipo (migración 0026). El usuario de prueba es admin y entra como
+    // Dirección para poder probar /equipo y /admin/equipo.
+    equipo_miembros: [
+      { profile_id: uTest, rol: "direccion", titulo: "Fundador y Director General", activo: true, created_at: nowIso() },
+    ],
+    equipo_metas: [
+      { rol: "direccion", actividades_semana: 3, updated_at: nowIso() },
+      { rol: "operaciones", actividades_semana: 5, updated_at: nowIso() },
+      { rol: "analista", actividades_semana: 3, updated_at: nowIso() },
+      { rol: "marketing", actividades_semana: 15, updated_at: nowIso() },
+      { rol: "rp", actividades_semana: 6, updated_at: nowIso() },
+      { rol: "comercial", actividades_semana: 8, updated_at: nowIso() },
+      { rol: "finanzas", actividades_semana: 2, updated_at: nowIso() },
+    ],
+    equipo_actividades: [],
+    equipo_pipeline: [],
+    equipo_checkins: [],
+    equipo_compromisos: [],
+    finanzas_movimientos: [],
+    equipo_directrices: [],
+    agente_corridas: [],
+    agente_acciones: [],
     credit_transactions: [
       {
         id: uid("tx"),

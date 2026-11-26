@@ -33,10 +33,15 @@ import {
 } from "./plantillas";
 
 const REMITENTE = "Abraham de SwapFairways";
+export type { Db as DbCorreos };
 const DIA_MS = 24 * 60 * 60 * 1000;
 
 type Db = SupabaseClient<Database>;
-export type TipoCorreo = "T1" | "T2" | "T4" | "T7" | "T8" | "S0" | "S1" | "S2" | "S3";
+export type TipoCorreo =
+  | "T1" | "T2" | "T4" | "T7" | "T8" | "S0" | "S1" | "S2" | "S3"
+  // Correos internos del equipo (lib/equipo/correos.ts): E1 recordatorio de
+  // check-in, E2 resumen semanal al fundador, E3 compromiso vencido.
+  | "E1" | "E2" | "E3";
 
 // Cliente que puede leer todo (service role). En modo demo, el simulado.
 async function db(): Promise<Db> {
@@ -93,7 +98,7 @@ async function liberar(cliente: Db, userId: string, tipo: TipoCorreo, referencia
 
 export type ResultadoEnvio = "enviado" | "ya_enviado" | "sin_correo" | "fallo";
 
-async function enviarUnaVez(
+export async function enviarUnaVez(
   cliente: Db,
   args: {
     userId: string;

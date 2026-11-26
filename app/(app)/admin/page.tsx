@@ -26,6 +26,11 @@ export default async function AdminPage() {
 
   const tarjetas = [
     {
+      href: "/admin/equipo",
+      titulo: "Tablero del equipo",
+      detalle: "KPIs de la app en vivo, semáforo por rol, check-ins, compromisos, pipeline y P&L",
+    },
+    {
       href: "/admin/clubes",
       titulo: "Clubes, fotos y estatutos",
       detalle: `${clubsConDocs} de ${clubs?.length ?? 0} clubes con documentos · ${clubsConFoto} con foto`,

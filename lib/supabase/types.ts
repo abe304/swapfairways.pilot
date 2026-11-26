@@ -145,6 +145,150 @@ export type TeeTimeOffer = {
   created_at: string;
 }
 
+export type RolEquipo =
+  | "direccion"
+  | "operaciones"
+  | "analista"
+  | "marketing"
+  | "rp"
+  | "comercial"
+  | "finanzas";
+
+// Tablas del equipo (migración 0026).
+export type EquipoMiembro = {
+  profile_id: string;
+  rol: RolEquipo;
+  titulo: string | null;
+  activo: boolean;
+  created_at: string;
+}
+
+export type EquipoMeta = {
+  rol: RolEquipo;
+  actividades_semana: number;
+  updated_at: string;
+}
+
+export type EquipoActividad = {
+  id: string;
+  /** null cuando lo registró un agente de IA (migración 0027). */
+  autor_id: string | null;
+  agente?: string | null;
+  rol: string;
+  tipo: string;
+  titulo: string;
+  contraparte: string | null;
+  resultado: string | null;
+  enlace: string | null;
+  fecha: string;
+  pipeline_id: string | null;
+  created_at: string;
+}
+
+export type EtapaPipeline = "identificado" | "contactado" | "conversacion" | "propuesta" | "cerrado" | "perdido";
+
+export type EquipoPipeline = {
+  id: string;
+  responsable_id: string | null;
+  agente?: string | null;
+  categoria: string;
+  nombre: string;
+  contacto: string | null;
+  etapa: EtapaPipeline;
+  monto_estimado: number | null;
+  proximo_paso: string | null;
+  proxima_fecha: string | null;
+  notas: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type EquipoCheckin = {
+  id: string;
+  autor_id: string;
+  semana: string;
+  logros: string | null;
+  bloqueos: string | null;
+  plan: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type EquipoCompromiso = {
+  id: string;
+  autor_id: string | null;
+  agente?: string | null;
+  checkin_id: string | null;
+  texto: string;
+  fecha_limite: string;
+  hecho: boolean;
+  hecho_at: string | null;
+  created_at: string;
+}
+
+export type FinanzasMovimiento = {
+  id: string;
+  fecha: string;
+  tipo: "ingreso" | "gasto";
+  categoria: string;
+  canal: string | null;
+  concepto: string;
+  monto: number;
+  registrado_por: string | null;
+  created_at: string;
+}
+
+// Agentes de IA (migración 0027).
+export type EquipoDirectriz = {
+  id: string;
+  rol: string | null;
+  texto: string;
+  activa: boolean;
+  created_at: string;
+}
+
+export type AgenteCorrida = {
+  id: string;
+  rol: string;
+  origen: "cron" | "manual";
+  estado: "corriendo" | "ok" | "error";
+  reporte: string | null;
+  error: string | null;
+  modelo: string | null;
+  pasos: number | null;
+  tokens_entrada: number | null;
+  tokens_salida: number | null;
+  inicio: string;
+  fin: string | null;
+}
+
+export type TipoAccionAgente =
+  | "correo"
+  | "whatsapp"
+  | "mensaje_instagram"
+  | "publicacion"
+  | "gasto"
+  | "tarea_tecnica"
+  | "otro";
+
+export type AgenteAccion = {
+  id: string;
+  corrida_id: string | null;
+  rol: string;
+  tipo: TipoAccionAgente;
+  destinatario: string | null;
+  user_id: string | null;
+  asunto: string | null;
+  cuerpo: string;
+  justificacion: string | null;
+  monto: number | null;
+  estado: "pendiente" | "aprobada" | "rechazada" | "ejecutada" | "fallida";
+  comentario: string | null;
+  resultado: string | null;
+  created_at: string;
+  decidida_at: string | null;
+}
+
 export type CorreoEnviado = {
   id: string;
   user_id: string;
@@ -266,6 +410,72 @@ export interface Database {
         Row: CorreoEnviado;
         Insert: Partial<CorreoEnviado> & { user_id: string; tipo: string };
         Update: Partial<CorreoEnviado>;
+        Relationships: [];
+      };
+      equipo_miembros: {
+        Row: EquipoMiembro;
+        Insert: Partial<EquipoMiembro> & { profile_id: string; rol: RolEquipo };
+        Update: Partial<EquipoMiembro>;
+        Relationships: [];
+      };
+      equipo_metas: {
+        Row: EquipoMeta;
+        Insert: Partial<EquipoMeta> & { rol: RolEquipo };
+        Update: Partial<EquipoMeta>;
+        Relationships: [];
+      };
+      equipo_actividades: {
+        Row: EquipoActividad;
+        Insert: Partial<EquipoActividad> & { rol: string; tipo: string; titulo: string };
+        Update: Partial<EquipoActividad>;
+        Relationships: [];
+      };
+      equipo_pipeline: {
+        Row: EquipoPipeline;
+        Insert: Partial<EquipoPipeline> & { categoria: string; nombre: string };
+        Update: Partial<EquipoPipeline>;
+        Relationships: [];
+      };
+      equipo_checkins: {
+        Row: EquipoCheckin;
+        Insert: Partial<EquipoCheckin> & { semana: string };
+        Update: Partial<EquipoCheckin>;
+        Relationships: [];
+      };
+      equipo_compromisos: {
+        Row: EquipoCompromiso;
+        Insert: Partial<EquipoCompromiso> & { texto: string; fecha_limite: string };
+        Update: Partial<EquipoCompromiso>;
+        Relationships: [];
+      };
+      equipo_directrices: {
+        Row: EquipoDirectriz;
+        Insert: Partial<EquipoDirectriz> & { texto: string };
+        Update: Partial<EquipoDirectriz>;
+        Relationships: [];
+      };
+      agente_corridas: {
+        Row: AgenteCorrida;
+        Insert: Partial<AgenteCorrida> & { rol: string };
+        Update: Partial<AgenteCorrida>;
+        Relationships: [];
+      };
+      agente_acciones: {
+        Row: AgenteAccion;
+        Insert: Partial<AgenteAccion> & { rol: string; tipo: TipoAccionAgente; cuerpo: string };
+        Update: Partial<AgenteAccion>;
+        Relationships: [];
+      };
+      finanzas_movimientos: {
+        Row: FinanzasMovimiento;
+        Insert: Partial<FinanzasMovimiento> & {
+          fecha: string;
+          tipo: "ingreso" | "gasto";
+          categoria: string;
+          concepto: string;
+          monto: number;
+        };
+        Update: Partial<FinanzasMovimiento>;
         Relationships: [];
       };
       lista_espera: {
@@ -434,6 +644,14 @@ export interface Database {
       admin_listar_usuarios: {
         Args: Record<string, never>;
         Returns: UsuarioAdmin[];
+      };
+      es_equipo: {
+        Args: Record<string, never>;
+        Returns: boolean;
+      };
+      rol_equipo: {
+        Args: Record<string, never>;
+        Returns: RolEquipo | null;
       };
     };
   };
