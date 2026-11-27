@@ -129,7 +129,7 @@ export const ETIQUETA_ACCION: Record<TipoAccionAgente, string> = {
 };
 
 // Modelo por defecto (AI Gateway). Se puede cambiar con AGENTES_MODELO.
-export const MODELO_AGENTES = process.env.AGENTES_MODELO?.trim() || "anthropic/claude-sonnet-5.5";
+export const MODELO_AGENTES = process.env.AGENTES_MODELO?.trim() || "anthropic/claude-haiku-5.5";
 
 export const CONTEXTO_NEGOCIO = `SwapFairways es un piloto web (swapfairways-pilot.vercel.app) para que socios de clubes de golf en México intercambien salidas (tee times) usando créditos:
 - Un socio publica una oferta (fecha y lugares) en su club; otro socio solicita el lugar pagando créditos; el anfitrión aprueba y los dos juegan.
