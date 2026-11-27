@@ -215,6 +215,127 @@ export function crearHerramientas(db: Db, agente: AgenteConfig, corridaId: strin
     });
   }
 
+  if (h.has("correos")) {
+    tools.revisar_correos = tool({
+      description:
+        "Revisa los correos automáticos de la app: si el envío está configurado y cuántos salieron por tipo en los últimos N días (T1 bienvenida, T2 créditos, T4 solicitud sin respuesta, T7 ronda mañana, T8 después de la ronda, S0–S3 seguimiento, E1–E3 equipo).",
+      inputSchema: z.object({ dias: z.number().int().min(1).max(60).default(14) }),
+      execute: async ({ dias }) => {
+        const { data, error } = await db
+          .from("correos_enviados")
+          .select("tipo, enviado_at")
+          .gte("enviado_at", `${sumarDias(hoy, -dias)}T00:00:00Z`);
+        if (error) return { error: error.message };
+        const porTipo: Record<string, number> = {};
+        for (const c of data ?? []) porTipo[c.tipo as string] = (porTipo[c.tipo as string] ?? 0) + 1;
+        const { count: socios } = await db.from("profiles").select("id", { count: "exact", head: true });
+        return {
+          envio_configurado: !!process.env.RESEND_API_KEY,
+          dias,
+          enviados_por_tipo: porTipo,
+          total: (data ?? []).length,
+          socios_registrados: socios ?? null,
+          nota: "Cada correo se registra antes de enviarse y se borra si falla, así que estos son los que salieron.",
+        };
+      },
+    });
+  }
+
+  if (h.has("invitaciones")) {
+    let creados = 0;
+    tools.leer_codigos_invitacion = tool({
+      description: "Códigos de invitación de fundador ya creados (para no duplicar): a quién, si ya se usó y cuándo se creó.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const { data } = await db
+          .from("codigos_invitacion")
+          .select("codigo, etiqueta, usos, created_at")
+          .eq("tipo", "fundador")
+          .order("created_at", { ascending: false })
+          .limit(200);
+        return data ?? [];
+      },
+    });
+    tools.crear_codigo_invitacion = tool({
+      description:
+        "Crea un código de invitación de fundador (un uso) para un golfista. NO lo envía: aparece en Administración → Invitaciones con botón de WhatsApp para que Abraham lo mande cuando quiera.",
+      inputSchema: z.object({
+        nombre: z.string().min(2).max(100),
+        instagram: z.string().max(60).optional().describe("@cuenta"),
+        club: z.string().max(120).optional(),
+        email: z.string().email().optional(),
+        telefono: z.string().max(20).optional(),
+        motivo: z.string().max(300).describe("Por qué invitarlo (dónde lo encontraste)"),
+      }),
+      execute: async (p) => {
+        if (creados >= 20) return { error: "Límite de 20 códigos por corrida." };
+        const etiqueta = [p.nombre, p.instagram, p.club].filter(Boolean).join(" · ").slice(0, 200);
+        const { data: dup } = await db
+          .from("codigos_invitacion")
+          .select("codigo")
+          .eq("tipo", "fundador")
+          .ilike("etiqueta", `${p.nombre}%`)
+          .limit(1);
+        if (dup?.length) return { error: `Ya tiene código (${dup[0].codigo}).` };
+        const { data: admin } = await db.from("profiles").select("id").eq("is_admin", true).limit(1).maybeSingle();
+        const { generarCodigo } = await import("@/lib/invites");
+        for (let i = 0; i < 5; i++) {
+          const codigo = generarCodigo();
+          const { error } = await db.from("codigos_invitacion").insert({
+            codigo,
+            tipo: "fundador",
+            etiqueta,
+            email: p.email ?? null,
+            telefono: p.telefono ?? null,
+            usos_maximos: 1,
+            creado_por: (admin?.id as string | undefined) ?? null,
+          });
+          if (!error) {
+            creados += 1;
+            await db.from("equipo_actividades").insert({
+              autor_id: null,
+              agente: rol,
+              rol,
+              tipo: ROL_POR_CLAVE[rol].tiposActividad[0],
+              titulo: `Código de invitación para ${etiqueta}`,
+              contraparte: p.nombre,
+              resultado: `${codigo} · ${p.motivo}`,
+              fecha: hoy,
+            });
+            return { ok: true, codigo };
+          }
+          if (!/duplicate|unique/i.test(error.message)) return { error: error.message };
+        }
+        return { error: "No se pudo generar un código único." };
+      },
+    });
+  }
+
+  if (h.has("hojas")) {
+    tools.leer_google_sheet = tool({
+      description:
+        "Lee una hoja de Google Sheets compartida con 'cualquiera con el enlace' (solo lectura). Pasa el enlace tal cual; devuelve las filas como CSV.",
+      inputSchema: z.object({ url: z.string().url() }),
+      execute: async ({ url }) => {
+        const m = url.match(/^https:\/\/docs\.google\.com\/spreadsheets\/d\/([\w-]+)/);
+        if (!m) return { error: "Solo se aceptan enlaces de docs.google.com/spreadsheets." };
+        const gid = url.match(/[#&?]gid=(\d+)/)?.[1] ?? "0";
+        const res = await fetch(`https://docs.google.com/spreadsheets/d/${m[1]}/export?format=csv&gid=${gid}`, {
+          redirect: "follow",
+        });
+        const tipo = res.headers.get("content-type") ?? "";
+        if (!res.ok || !tipo.includes("csv")) {
+          return {
+            error:
+              "No se pudo leer: la hoja no está compartida como 'Cualquier persona con el enlace puede ver'. Pídeselo a Abraham en tu reporte.",
+          };
+        }
+        const csv = await res.text();
+        return { csv: csv.slice(0, 60_000), recortado: csv.length > 60_000 };
+      },
+    });
+  }
+
   if (h.has("buscar_web")) {
     tools.buscar_web = gateway.tools.perplexitySearch({ maxResults: 8, country: "MX" });
   }

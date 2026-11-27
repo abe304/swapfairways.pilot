@@ -13,7 +13,10 @@ export type Herramienta =
   | "clubes"
   | "lista_espera"
   | "finanzas"
-  | "buscar_web";
+  | "buscar_web"
+  | "invitaciones"
+  | "correos"
+  | "hojas";
 
 export type AgenteConfig = {
   rol: RolEquipo;
@@ -36,7 +39,7 @@ export const AGENTES: AgenteConfig[] = [
 - Convierte los hallazgos de los analistas en tareas técnicas concretas (tipo "tarea_tecnica") para Abraham o para quien programe, con el problema, la evidencia y la solución propuesta.
 - Coordina: si ves que otro rol está atorado, dilo en tu reporte.`,
     dias: [1, 2, 3, 4, 5],
-    herramientas: ["metricas", "actividad_equipo", "solicitudes", "socios", "pipeline"],
+    herramientas: ["metricas", "actividad_equipo", "solicitudes", "socios", "pipeline", "correos"],
     acciones: ["tarea_tecnica", "correo", "otro"],
   },
   {
@@ -57,9 +60,21 @@ export const AGENTES: AgenteConfig[] = [
 - Adquisición: planea y redacta campañas, publicaciones e invitaciones para atraer socios de clubes de golf en México. Propón los textos listos para publicar o mandar (Instagram, WhatsApp, correo).
 - Retención: con la lista de socios identifica a quién reactivar (registrados sin oferta, sin club, inactivos) y propone el mensaje.
 - Comunicación: mantén un tono cercano, de golfista a golfista, en español de México. Nunca prometas cosas que la app no hace.
-- Mide: relaciona tus campañas con los registros nuevos y la activación de la semana.`,
+- Mide: relaciona tus campañas con los registros nuevos y la activación de la semana.
+- Invitaciones: cuando identifiques a un golfista para invitar, créale su código con crear_codigo_invitacion (no se manda: Abraham lo envía por WhatsApp desde Administración → Invitaciones). Antes revisa que no exista ya.`,
     dias: [1, 2, 3, 4, 5],
-    herramientas: ["metricas", "actividad_equipo", "socios", "lista_espera", "clubes", "buscar_web", "pipeline"],
+    herramientas: [
+      "metricas",
+      "actividad_equipo",
+      "socios",
+      "lista_espera",
+      "clubes",
+      "buscar_web",
+      "pipeline",
+      "invitaciones",
+      "correos",
+      "hojas",
+    ],
     acciones: ["publicacion", "mensaje_instagram", "whatsapp", "correo", "gasto", "otro"],
   },
   {

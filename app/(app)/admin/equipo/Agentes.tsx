@@ -56,6 +56,11 @@ export async function Agentes({
   const decididas = listaAcciones.filter((a) => !["pendiente", "aprobada"].includes(a.estado)).slice(0, 10);
   const disponible = iaDisponible();
   const lunes = lunesDe();
+  // Agentes cuya última corrida falló, para avisar arriba y no solo en su tarjeta.
+  const fallidos = AGENTES.map((a) => listaCorridas.find((c) => c.rol === a.rol)).filter(
+    (c): c is AgenteCorrida => !!c && c.estado === "error",
+  );
+  const sinCredito = fallidos.some((c) => /free tier|credits|top-up/i.test(c.error ?? ""));
 
   return (
     <section className="mb-8">
@@ -68,6 +73,18 @@ export async function Agentes({
         <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
           En este entorno no hay acceso a la IA. En Vercel activa <strong>AI Gateway</strong> en el proyecto (usa la
           autenticación OIDC automática) o agrega la variable <code>AI_GATEWAY_API_KEY</code>.
+        </div>
+      ) : null}
+
+      {fallidos.length ? (
+        <div className="mb-4 rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-900">
+          <strong>
+            {fallidos.length === 1 ? "La última corrida de un agente falló" : `Las últimas corridas de ${fallidos.length} agentes fallaron`}
+            .
+          </strong>{" "}
+          {sinCredito
+            ? `El plan gratis de AI Gateway no incluye el modelo ${MODELO_AGENTES}. Agrega crédito de pago en Vercel → AI Gateway, o cambia el modelo de los agentes.`
+            : `Motivo: ${(fallidos[0].error ?? "").slice(0, 300)}`}
         </div>
       ) : null}
 
